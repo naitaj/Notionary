@@ -18,5 +18,8 @@
     "graph-rag"
   ],
   "author": "Notionary Team",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
 }

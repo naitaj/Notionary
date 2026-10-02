@@ -1,0 +1,9 @@
+LOG-01: Madhya Pradesh Rural Farm Deployment Log
+Date: 2026-03-22
+Operator: Vikram
+
+11:00 AM - Deployed 5 Jetson Nano sensor rigs across Zone A soybean crops.
+12:30 PM - Ambient temperature reached 41°C. Direct overhead sunlight causing heavy glare on upper leaf surfaces.
+02:15 PM - Executed EXP-09 field test on 500 ground-truth infected leaves under harsh noon sunlight.
+03:00 PM - Initial model predictions indicate elevated false negatives on early-stage bacterial leaf spot compared to indoor diffuse lighting benchmarks.
+04:30 PM - Uploaded EXP-09 logs to local field server.

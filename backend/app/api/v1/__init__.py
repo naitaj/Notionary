@@ -9,6 +9,10 @@ from app.api.v1.contradictions import router as contradictions_router
 from app.api.v1.notion import router as notion_router
 from app.api.v1.ai import router as ai_router
 from app.api.v1.seed import router as seed_router
+from app.api.v1.jobs import router as jobs_router
+from app.api.v1.audit import router as audit_router
+from app.api.v1.documents import router as documents_router
+from app.api.v1.search import router as search_router
 
 router = APIRouter()
 
@@ -22,3 +26,7 @@ router.include_router(contradictions_router)
 router.include_router(notion_router)
 router.include_router(ai_router)
 router.include_router(seed_router)
+router.include_router(jobs_router)
+router.include_router(audit_router)
+router.include_router(documents_router)
+router.include_router(search_router)

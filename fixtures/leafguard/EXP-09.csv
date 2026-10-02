@@ -1,0 +1,5 @@
+experiment_code,model,dataset,metric,value,unit,split,lighting,n_runs,variance,notes
+EXP-09,MobileNetV3-Small,Field Collected Rural MP,f1_score,78.5,%,field,direct_harsh_sun,5,2.4,Significant degradation observed under direct midday sunlight due to shadow artifacts
+EXP-09,MobileNetV3-Small,Field Collected Rural MP,latency_ms,14.8,ms,field,direct_harsh_sun,5,0.3,Latency remains within 20ms envelope on Jetson Nano
+EXP-06,MobileNetV3-Small,PlantVillage Clean v2,f1_score,88.2,%,val,indoor_diffuse,3,0.5,Baseline laboratory validation benchmark
+EXP-06,MobileNetV3-Small,PlantVillage Clean v2,latency_ms,14.2,ms,val,indoor_diffuse,3,0.2,Clean room inference benchmark

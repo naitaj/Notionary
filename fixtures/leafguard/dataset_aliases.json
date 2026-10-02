@@ -1,0 +1,12 @@
+[
+  {"kind": "subject", "canonical": "MobileNetV3-Small", "alias": "Model B"},
+  {"kind": "subject", "canonical": "MobileNetV3-Small", "alias": "mobilenet_v3_small"},
+  {"kind": "subject", "canonical": "ResNet-18", "alias": "Model A"},
+  {"kind": "subject", "canonical": "ResNet-18", "alias": "resnet18"},
+  {"kind": "dataset", "canonical": "LeafSet-field", "alias": "real-world images"},
+  {"kind": "dataset", "canonical": "LeafSet-field", "alias": "Field Collected Rural MP"},
+  {"kind": "dataset", "canonical": "LeafSet-v1", "alias": "PlantVillage Clean v2"},
+  {"kind": "metric", "canonical": "f1_score", "alias": "accuracy"},
+  {"kind": "metric", "canonical": "f1_score", "alias": "F1"},
+  {"kind": "metric", "canonical": "latency_ms", "alias": "latency"}
+]

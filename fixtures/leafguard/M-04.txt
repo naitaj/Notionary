@@ -1,0 +1,19 @@
+Meeting: LeafGuard Core Architecture Review & Edge Model Selection (M-04)
+Date: 2026-03-15
+Attendees: Karan Mehta (Lead), Ananya Patel (Researcher), Vikram (Edge ML Engineer)
+
+Karan Mehta: Welcome team. The main objective today is to finalize our edge inference architecture for on-device deployment across rural farms.
+
+Ananya Patel: I completed the benchmark comparisons between Model A (ResNet-18) and Model B (MobileNetV3-Small) under EXP-06. MobileNetV3-Small achieves 88.2% F1 accuracy on the PlantVillage Clean v2 dataset with an average inference latency of 14.2ms on the Jetson Nano target board. 
+
+Vikram: That's well within our 20ms edge latency budget. ResNet-18 clocked in at 31.8ms, which violates our thermal and battery constraints for continuous handheld scanning.
+
+Karan Mehta: The data is convincing. Let's make the formal decision:
+Decision D-17: Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.
+Rationale: MobileNetV3-Small meets our strict 20ms edge latency ceiling (clocking 14.2ms) while maintaining high accuracy (88.2% F1 score), whereas Model A (ResNet-18) exceeded 31ms latency and consumed twice the battery power.
+
+Ananya Patel: Agreed. I will take on task T-14: Quantize MobileNetV3-Small to INT8 via TensorRT-LLM and evaluate accuracy drop by March 25.
+
+Vikram: I will handle task T-15: Integrate MobileNetV3-Small inference pipeline into the Android camera capture daemon by March 28.
+
+Karan Mehta: Excellent. Let's make sure the server architecture document DOC-05 describes this updated edge pipeline before next Monday's client sync.

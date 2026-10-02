@@ -45,7 +45,7 @@ class LineageResponse(BaseModel):
     decision: DecisionResponse
     upstream_evidence: List[LineageNode]
     downstream_work: List[LineageNode]
-    alternatives_considered: List[str]
+    alternatives_considered: List[Any]
 
 @router.get("", response_model=List[DecisionResponse])
 async def list_decisions(project_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):

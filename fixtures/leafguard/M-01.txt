@@ -1,0 +1,7 @@
+Meeting: LeafGuard Edge Deployment Kickoff & Constraints (M-01)
+Date: 2026-02-05
+Attendees: Karan Mehta, Ananya Patel, Vikram
+
+Karan Mehta: We are developing LeafGuard for resource-constrained edge devices in rural Madhya Pradesh where internet connectivity is non-existent.
+Vikram: The target hardware is NVIDIA Jetson Nano and low-power Android handhelds. We have established a hard constraint of 20ms maximum latency per frame and 50MB maximum model memory footprint.
+Ananya Patel: We will establish benchmark baselines using PlantVillage and synthesize local field samples.
