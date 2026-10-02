@@ -22,6 +22,7 @@ import {
   Database,
   Radio,
   Upload,
+  Inbox,
 } from "lucide-react";
 
 interface DocumentItem {
@@ -109,6 +110,19 @@ interface ImpactResult {
   }>;
 }
 
+interface ProposalItem {
+  id: string;
+  project_id: string;
+  entity_type: string;
+  tier: string;
+  confidence_label: string;
+  needs_attention: boolean;
+  status: string;
+  payload: Record<string, any>;
+  excerpt_text?: string;
+  created_at: string;
+}
+
 export default function NotionaryDashboard() {
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [health, setHealth] = useState<HealthData | null>(null);
@@ -137,6 +151,13 @@ export default function NotionaryDashboard() {
   const [uploadDocType, setUploadDocType] = useState("note");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+
+  // Review Inbox (Phase 3) state
+  const [proposals, setProposals] = useState<ProposalItem[]>([]);
+  const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
+  const [inboxFilter, setInboxFilter] = useState<string>("all");
+  const [isProcessingProposal, setIsProcessingProposal] = useState(false);
+  const [inboxActionMessage, setInboxActionMessage] = useState<string | null>(null);
 
   // Seed demo data on initial load
   useEffect(() => {
@@ -218,8 +239,194 @@ export default function NotionaryDashboard() {
             pipeline_status: "completed",
           },
         ]);
+        loadProposals("demo");
       });
   }, []);
+
+  const loadProposals = async (pId: string) => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/proposals/?project_id=${pId}&status=pending`);
+      if (res.ok) {
+        const data = await res.json();
+        setProposals(data);
+        if (data.length > 0 && !selectedProposal) {
+          setSelectedProposal(data[0]);
+        }
+      }
+    } catch {
+      // Demo proposals extracted from M-04
+      const fallbackProposals: ProposalItem[] = [
+        {
+          id: "prop-d17",
+          project_id: pId,
+          entity_type: "decision",
+          tier: "high",
+          confidence_label: "high",
+          needs_attention: false,
+          status: "pending",
+          payload: {
+            code: "D-17",
+            statement: "Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.",
+            rationale: "MobileNetV3-Small meets our strict 20ms edge latency ceiling (clocking 14.2ms) while maintaining high accuracy (88.2% F1 score), whereas Model A (ResNet-18) exceeded 31ms latency and consumed twice the battery power.",
+            alternatives: [{ name: "Model A (ResNet-18)", reason: "Exceeded 20ms edge latency budget" }],
+            decided_by_alias: "Karan Mehta",
+            decided_date_str: "2026-03-15",
+          },
+          excerpt_text: "Decision D-17: Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.",
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: "prop-t14",
+          project_id: pId,
+          entity_type: "task",
+          tier: "medium",
+          confidence_label: "high",
+          needs_attention: false,
+          status: "pending",
+          payload: {
+            code: "T-14",
+            title: "Quantize MobileNetV3-Small to INT8 via TensorRT-LLM and evaluate accuracy drop by March 25.",
+            owner_alias: "Ananya Patel",
+            due_date_str: "2026-03-25",
+            priority: "high",
+            origin_decision_code: "D-17",
+          },
+          excerpt_text: "Ananya Patel: Agreed. I will take on task T-14: Quantize MobileNetV3-Small to INT8 via TensorRT-LLM and evaluate accuracy drop by March 25.",
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: "prop-t15",
+          project_id: pId,
+          entity_type: "task",
+          tier: "medium",
+          confidence_label: "high",
+          needs_attention: false,
+          status: "pending",
+          payload: {
+            code: "T-15",
+            title: "Integrate MobileNetV3-Small inference pipeline into the Android camera capture daemon by March 28.",
+            owner_alias: "Vikram",
+            due_date_str: "2026-03-28",
+            priority: "medium",
+          },
+          excerpt_text: "Vikram: I will handle task T-15: Integrate MobileNetV3-Small inference pipeline into the Android camera capture daemon by March 28.",
+          created_at: new Date().toISOString(),
+        },
+        {
+          id: "prop-exp06",
+          project_id: pId,
+          entity_type: "experiment",
+          tier: "medium",
+          confidence_label: "high",
+          needs_attention: true,
+          status: "pending",
+          payload: {
+            code: "EXP-06",
+            hypothesis: "MobileNetV3-Small achieves 88.2% F1 within 20ms latency",
+            model: "MobileNetV3-Small",
+            dataset: "PlantVillage Clean v2",
+            parameters: { batch_size: 1, precision: "FP16" },
+            owner_alias: "Ananya Patel",
+            metric: "latency",
+            metric_value: 14.2,
+            metric_unit: "ms",
+          },
+          excerpt_text: "MobileNetV3-Small achieves 88.2% F1 accuracy on the PlantVillage Clean v2 dataset with an average inference latency of 14.2ms on the Jetson Nano target board.",
+          created_at: new Date().toISOString(),
+        }
+      ];
+      setProposals(fallbackProposals);
+      setSelectedProposal(fallbackProposals[0]);
+    }
+  };
+
+  const handleApproveProposal = async (proposalId: string) => {
+    setIsProcessingProposal(true);
+    setInboxActionMessage(null);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/proposals/${proposalId}/approve`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        setProposals((prev) => prev.filter((p) => p.id !== proposalId));
+        setInboxActionMessage("Proposal approved! Record, lineage edges, and Notion sync enqueued.");
+        if (selectedProposal?.id === proposalId) {
+          const remaining = proposals.filter((p) => p.id !== proposalId);
+          setSelectedProposal(remaining[0] || null);
+        }
+      }
+    } catch {
+      // Local optimistic update
+      setProposals((prev) => prev.filter((p) => p.id !== proposalId));
+      setInboxActionMessage("Proposal approved (offline mode).");
+      if (selectedProposal?.id === proposalId) {
+        const remaining = proposals.filter((p) => p.id !== proposalId);
+        setSelectedProposal(remaining[0] || null);
+      }
+    } finally {
+      setIsProcessingProposal(false);
+    }
+  };
+
+  const handleRejectProposal = async (proposalId: string, reason: string = "Rejected during review") => {
+    setIsProcessingProposal(true);
+    setInboxActionMessage(null);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/proposals/${proposalId}/reject`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      if (res.ok) {
+        setProposals((prev) => prev.filter((p) => p.id !== proposalId));
+        setInboxActionMessage("Proposal rejected and archived with reason.");
+        if (selectedProposal?.id === proposalId) {
+          const remaining = proposals.filter((p) => p.id !== proposalId);
+          setSelectedProposal(remaining[0] || null);
+        }
+      }
+    } catch {
+      setProposals((prev) => prev.filter((p) => p.id !== proposalId));
+      setInboxActionMessage("Proposal rejected.");
+      if (selectedProposal?.id === proposalId) {
+        const remaining = proposals.filter((p) => p.id !== proposalId);
+        setSelectedProposal(remaining[0] || null);
+      }
+    } finally {
+      setIsProcessingProposal(false);
+    }
+  };
+
+  const handleBulkApproveTasks = async () => {
+    const taskIds = proposals.filter((p) => p.entity_type === "task" && p.tier !== "high").map((p) => p.id);
+    if (taskIds.length === 0) return;
+    setIsProcessingProposal(true);
+    setInboxActionMessage(null);
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/proposals/bulk-approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: currentProjectId, proposal_ids: taskIds }),
+      });
+      if (res.ok) {
+        setProposals((prev) => prev.filter((p) => !taskIds.includes(p.id)));
+        setInboxActionMessage(`Bulk approved ${taskIds.length} tasks successfully!`);
+        if (selectedProposal && taskIds.includes(selectedProposal.id)) {
+          const remaining = proposals.filter((p) => !taskIds.includes(p.id));
+          setSelectedProposal(remaining[0] || null);
+        }
+      }
+    } catch {
+      setProposals((prev) => prev.filter((p) => !taskIds.includes(p.id)));
+      setInboxActionMessage(`Bulk approved ${taskIds.length} tasks.`);
+      if (selectedProposal && taskIds.includes(selectedProposal.id)) {
+        const remaining = proposals.filter((p) => !taskIds.includes(p.id));
+        setSelectedProposal(remaining[0] || null);
+      }
+    } finally {
+      setIsProcessingProposal(false);
+    }
+  };
 
   const loadDocuments = async (pId: string) => {
     try {
@@ -347,6 +554,7 @@ export default function NotionaryDashboard() {
         setContradictions(await cRes.json());
 
         loadDocuments(pId);
+        loadProposals(pId);
       }
     } catch (e) {
       console.error(e);
@@ -477,6 +685,7 @@ export default function NotionaryDashboard() {
           <nav className="p-3 space-y-1">
             {[
               { id: "overview", label: "Overview", icon: Activity },
+              { id: "inbox", label: "Review Inbox", icon: Inbox, badge: proposals.length },
               { id: "decisions", label: "Decisions & 'Why?'", icon: GitBranch },
               { id: "tasks", label: "Tasks & Origin", icon: CheckSquare },
               { id: "radar", label: "Contradiction Radar", icon: AlertTriangle, badge: contradictions.length },
@@ -630,6 +839,279 @@ export default function NotionaryDashboard() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB: REVIEW INBOX (PHASE 3) */}
+          {activeTab === "inbox" && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+                    <Inbox className="h-6 w-6 text-indigo-400" />
+                    Review Inbox (Human-in-the-Loop Gate)
+                  </h2>
+                  <p className="text-sm text-slate-400 mt-1">
+                    Structured proposals extracted from meeting notes and logs via Groq LLM. Human approval is strictly required before writing to Notion.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleBulkApproveTasks}
+                    disabled={isProcessingProposal || proposals.filter((p) => p.entity_type === "task").length === 0}
+                    className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white flex items-center gap-2 shadow-sm transition-all"
+                  >
+                    <CheckSquare className="h-3.5 w-3.5" />
+                    Bulk Approve Tasks ({proposals.filter((p) => p.entity_type === "task").length})
+                  </button>
+                  <button
+                    onClick={() => loadProposals(currentProjectId)}
+                    className="px-3 py-2 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              {inboxActionMessage && (
+                <div className="p-3.5 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs flex items-center justify-between animate-in fade-in">
+                  <span>{inboxActionMessage}</span>
+                  <button onClick={() => setInboxActionMessage(null)} className="text-slate-400 hover:text-white">✕</button>
+                </div>
+              )}
+
+              {/* Filter Tabs */}
+              <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+                {["all", "decision", "task", "experiment", "claim"].map((filterKey) => (
+                  <button
+                    key={filterKey}
+                    onClick={() => setInboxFilter(filterKey)}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${
+                      inboxFilter === filterKey
+                        ? "bg-slate-800 text-white border border-slate-700"
+                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
+                    }`}
+                  >
+                    {filterKey === "all" ? "All Proposals" : `${filterKey}s`}
+                    <span className="ml-1.5 text-[10px] px-1.5 py-0.2 rounded-full bg-slate-950 font-mono">
+                      {filterKey === "all"
+                        ? proposals.length
+                        : proposals.filter((p) => p.entity_type === filterKey).length}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {proposals.length === 0 ? (
+                <div className="p-12 text-center rounded-xl bg-slate-900/40 border border-slate-800">
+                  <CheckCircle2 className="h-10 w-10 text-emerald-400 mx-auto mb-3" />
+                  <h3 className="text-base font-semibold text-white">Review Inbox Empty</h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                    All extracted proposals have been reviewed and committed. Ingest a new meeting transcript (e.g. M-04) from the Knowledge tab to generate new structured proposals.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Left Column: Proposals List */}
+                  <div className="lg:col-span-5 space-y-3">
+                    {proposals
+                      .filter((p) => inboxFilter === "all" || p.entity_type === inboxFilter)
+                      .map((p) => {
+                        const isSelected = selectedProposal?.id === p.id;
+                        return (
+                          <div
+                            key={p.id}
+                            onClick={() => setSelectedProposal(p)}
+                            className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                              isSelected
+                                ? "bg-indigo-950/40 border-indigo-500/80 shadow-md shadow-indigo-950/50"
+                                : "bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
+                                    p.entity_type === "decision"
+                                      ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                                      : p.entity_type === "task"
+                                      ? "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                                      : p.entity_type === "experiment"
+                                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                                      : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                                  }`}
+                                >
+                                  {p.payload?.code || p.entity_type}
+                                </span>
+                                <span
+                                  className={`text-[10px] px-1.5 py-0.5 rounded border uppercase font-mono ${
+                                    p.tier === "high"
+                                      ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                                      : "bg-slate-800 text-slate-300 border-slate-700"
+                                  }`}
+                                >
+                                  {p.tier} tier
+                                </span>
+                              </div>
+                              {p.needs_attention && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  Needs Attention
+                                </span>
+                              )}
+                            </div>
+
+                            <h4 className="text-xs font-semibold text-slate-200 line-clamp-2">
+                              {p.payload?.statement || p.payload?.title || p.payload?.hypothesis || "Extracted Entity"}
+                            </h4>
+
+                            {p.excerpt_text && (
+                              <p className="text-[11px] text-slate-400 mt-2 line-clamp-1 italic bg-slate-950/60 p-1.5 rounded border border-slate-800/60">
+                                "{p.excerpt_text}"
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+
+                  {/* Right Column: Proposal Inspector & Human Gate */}
+                  <div className="lg:col-span-7">
+                    {selectedProposal ? (
+                      <div className="p-6 rounded-xl bg-slate-900/80 border border-slate-800 space-y-6 sticky top-20">
+                        <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-800">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs px-2.5 py-0.5 rounded bg-indigo-600 font-mono font-bold text-white uppercase">
+                                {selectedProposal.payload?.code || selectedProposal.entity_type}
+                              </span>
+                              <span className="text-xs text-slate-400 capitalize">
+                                Proposed {selectedProposal.entity_type}
+                              </span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                {selectedProposal.confidence_label} confidence
+                              </span>
+                            </div>
+                            <h3 className="text-base font-bold text-white mt-2 leading-snug">
+                              {selectedProposal.payload?.statement ||
+                                selectedProposal.payload?.title ||
+                                selectedProposal.payload?.hypothesis}
+                            </h3>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleRejectProposal(selectedProposal.id)}
+                              disabled={isProcessingProposal}
+                              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/80 transition-colors"
+                            >
+                              Reject
+                            </button>
+                            <button
+                              onClick={() => handleApproveProposal(selectedProposal.id)}
+                              disabled={isProcessingProposal}
+                              className="px-4 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 shadow-sm transition-all"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" />
+                              Approve to Graph & Notion
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Verbatim Grounding Excerpt */}
+                        {selectedProposal.excerpt_text && (
+                          <div className="space-y-1.5">
+                            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                              Verbatim Grounding Excerpt (Validated Substring)
+                            </span>
+                            <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 italic leading-relaxed">
+                              "{selectedProposal.excerpt_text}"
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Extracted Payload Details */}
+                        <div className="space-y-3">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                            Extracted Structured Attributes
+                          </span>
+                          <div className="grid grid-cols-2 gap-3 text-xs bg-slate-950/60 p-4 rounded-lg border border-slate-800">
+                            {selectedProposal.payload?.rationale && (
+                              <div className="col-span-2">
+                                <span className="text-slate-500 block text-[10px] uppercase font-mono">Rationale</span>
+                                <span className="text-slate-300 leading-relaxed">{selectedProposal.payload.rationale}</span>
+                              </div>
+                            )}
+                            {selectedProposal.payload?.owner_alias && (
+                              <div>
+                                <span className="text-slate-500 block text-[10px] uppercase font-mono">Assigned Owner</span>
+                                <span className="text-slate-200 font-medium">{selectedProposal.payload.owner_alias}</span>
+                              </div>
+                            )}
+                            {selectedProposal.payload?.due_date_str && (
+                              <div>
+                                <span className="text-slate-500 block text-[10px] uppercase font-mono">Due Date</span>
+                                <span className="text-slate-200 font-mono">{selectedProposal.payload.due_date_str}</span>
+                              </div>
+                            )}
+                            {selectedProposal.payload?.priority && (
+                              <div>
+                                <span className="text-slate-500 block text-[10px] uppercase font-mono">Priority</span>
+                                <span className="text-slate-200 capitalize">{selectedProposal.payload.priority}</span>
+                              </div>
+                            )}
+                            {selectedProposal.payload?.model && (
+                              <div>
+                                <span className="text-slate-500 block text-[10px] uppercase font-mono">Model Architecture</span>
+                                <span className="text-slate-200">{selectedProposal.payload.model}</span>
+                              </div>
+                            )}
+                            {selectedProposal.payload?.dataset && (
+                              <div>
+                                <span className="text-slate-500 block text-[10px] uppercase font-mono">Dataset Target</span>
+                                <span className="text-slate-200">{selectedProposal.payload.dataset}</span>
+                              </div>
+                            )}
+                            {selectedProposal.payload?.metric && (
+                              <div>
+                                <span className="text-slate-500 block text-[10px] uppercase font-mono">Metric</span>
+                                <span className="text-slate-200">
+                                  {selectedProposal.payload.metric}: {selectedProposal.payload.metric_value} {selectedProposal.payload.metric_unit || ""}
+                                </span>
+                              </div>
+                            )}
+                            {selectedProposal.payload?.alternatives && selectedProposal.payload.alternatives.length > 0 && (
+                              <div className="col-span-2">
+                                <span className="text-slate-500 block text-[10px] uppercase font-mono">Alternatives Considered</span>
+                                <div className="space-y-1 mt-1">
+                                  {selectedProposal.payload.alternatives.map((alt: any, idx: number) => (
+                                    <div key={idx} className="p-2 rounded bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
+                                      <strong className="text-slate-200">{alt.name || alt}:</strong> {alt.reason || "Evaluated but rejected"}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Gate Security Notice */}
+                        <div className="p-3 rounded-lg bg-indigo-950/20 border border-indigo-900/40 text-[11px] text-indigo-300 flex items-center gap-2">
+                          <ShieldCheck className="h-4 w-4 text-indigo-400 flex-shrink-0" />
+                          <span>
+                            Approving commits this record to SQLite/PostgreSQL, links typed relation edges, and pushes the new page into Notion.
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-12 text-center rounded-xl bg-slate-900/40 border border-slate-800 text-slate-500 text-xs">
+                        Select a proposal from the queue to inspect details and approve.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

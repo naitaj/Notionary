@@ -12,6 +12,7 @@ class LLMProvider(ABC):
         system_prompt: Optional[str] = None,
         max_tokens: int = 2048,
         temperature: float = 0.0,
+        **kwargs,
     ) -> str:
         """Generates plain text completion."""
         pass
@@ -22,6 +23,7 @@ class LLMProvider(ABC):
         prompt: str,
         response_model: Type[T],
         system_prompt: Optional[str] = None,
+        **kwargs,
     ) -> T:
         """Generates a structured, schema-validated Pydantic model."""
         pass

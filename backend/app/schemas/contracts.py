@@ -1,6 +1,7 @@
+import re
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 SCHEMA_VERSION = "1.0.0"
 
@@ -15,9 +16,23 @@ class ExtractedClaim(BaseModel):
     dataset: Optional[str] = None
     condition: Optional[str] = None
     value: Optional[float] = None
-    excerpt: str = Field(description="Exact verbatim excerpt from source document")
+    excerpt: str = Field(default="", description="Exact verbatim excerpt from source document")
     char_start: Optional[int] = None
     char_end: Optional[int] = None
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def normalize_value(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            if isinstance(v, str):
+                nums = re.findall(r"[-+]?\d*\.?\d+", v)
+                if nums:
+                    return float(nums[0])
+            return float(v)
+        except Exception:
+            return None
 
 class ExtractedTask(BaseModel):
     code: Optional[str] = None  # e.g., T-14
@@ -26,7 +41,14 @@ class ExtractedTask(BaseModel):
     due_date_str: Optional[str] = None
     priority: str = "medium"
     origin_decision_code: Optional[str] = None
-    excerpt: str
+    excerpt: str = ""
+
+    @field_validator("priority", mode="before")
+    @classmethod
+    def normalize_priority(cls, v):
+        if not v:
+            return "medium"
+        return str(v).lower()
 
 class ExtractedExperiment(BaseModel):
     code: str  # e.g., EXP-06
@@ -39,27 +61,72 @@ class ExtractedExperiment(BaseModel):
     metric: Optional[str] = None
     metric_value: Optional[float] = None
     metric_unit: Optional[str] = None
-    excerpt: str
+    excerpt: str = ""
+
+    @field_validator("parameters", mode="before")
+    @classmethod
+    def normalize_parameters(cls, v):
+        if isinstance(v, dict):
+            return v
+        if isinstance(v, str):
+            return {"description": v}
+        return {}
+
+    @field_validator("metric_value", mode="before")
+    @classmethod
+    def normalize_metric_value(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            if isinstance(v, str):
+                nums = re.findall(r"[-+]?\d*\.?\d+", v)
+                if nums:
+                    return float(nums[0])
+            return float(v)
+        except Exception:
+            return None
 
 class ExtractedDecision(BaseModel):
     code: str  # e.g., D-17
     statement: str
     rationale: Optional[str] = None
-    alternatives: List[Dict[str, str]] = Field(default_factory=list)
+    alternatives: List[Dict[str, Any]] = Field(default_factory=list)
     decided_by_alias: Optional[str] = None
     decided_date_str: Optional[str] = None
     supersedes_code: Optional[str] = None
-    excerpt: str
+    excerpt: str = ""
+
+    @field_validator("alternatives", mode="before")
+    @classmethod
+    def normalize_alternatives(cls, v):
+        if isinstance(v, str):
+            return [{"name": v, "reason": ""}]
+        if isinstance(v, list):
+            res = []
+            for item in v:
+                if isinstance(item, str):
+                    res.append({"name": item, "reason": ""})
+                elif isinstance(item, dict):
+                    res.append(item)
+            return res
+        return []
 
 class ExtractionResult(BaseModel):
     schema_version: str = SCHEMA_VERSION
-    document_id: str
-    doc_type: str
+    document_id: str = ""
+    doc_type: str = "meeting_note"
     decisions: List[ExtractedDecision] = Field(default_factory=list)
     tasks: List[ExtractedTask] = Field(default_factory=list)
     experiments: List[ExtractedExperiment] = Field(default_factory=list)
     claims: List[ExtractedClaim] = Field(default_factory=list)
     discarded_excerpts_count: int = 0
+
+    @field_validator("decisions", "tasks", "experiments", "claims", mode="before")
+    @classmethod
+    def normalize_lists(cls, v):
+        if v is None:
+            return []
+        return v
 
 # ----------------- Review Inbox Proposals -----------------
 

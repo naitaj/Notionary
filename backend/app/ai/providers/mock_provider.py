@@ -16,6 +16,7 @@ class MockLLMProvider(LLMProvider):
         system_prompt: Optional[str] = None,
         max_tokens: int = 2048,
         temperature: float = 0.0,
+        **kwargs,
     ) -> str:
         if "Why was Model B chosen" in prompt or "lineage" in prompt.lower():
             return (
@@ -30,9 +31,20 @@ class MockLLMProvider(LLMProvider):
         prompt: str,
         response_model: Type[T],
         system_prompt: Optional[str] = None,
+        **kwargs,
     ) -> T:
         # Build a safe default structure according to the requested model
         model_name = response_model.__name__
+        if model_name == "SegmentationResult":
+            return response_model.model_validate({
+                "segments": [
+                    {
+                        "speaker": "Karan Mehta",
+                        "topic": "Architecture Review",
+                        "text": prompt[:200] if len(prompt) > 200 else prompt
+                    }
+                ]
+            })
         if model_name == "ExtractionResult":
             return response_model.model_validate({
                 "schema_version": "1.0.0",
@@ -41,42 +53,42 @@ class MockLLMProvider(LLMProvider):
                 "decisions": [{
                     "code": "D-17",
                     "statement": "Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.",
-                    "rationale": "Selected because latency is 14.2ms vs 31.8ms for Model A while achieving 88.2% F1 score.",
+                    "rationale": "MobileNetV3-Small meets our strict 20ms edge latency ceiling (clocking 14.2ms) while maintaining high accuracy (88.2% F1 score), whereas Model A (ResNet-18) exceeded 31ms latency and consumed twice the battery power.",
                     "alternatives": [{"name": "Model A (ResNet-18)", "reason": "Exceeded 20ms edge latency budget"}],
                     "decided_by_alias": "Karan Mehta",
                     "decided_date_str": "2026-03-15",
-                    "excerpt": "Karan: 'Let's lock in MobileNetV3-Small for the on-device pipeline.'",
+                    "excerpt": "Decision D-17: Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.",
                 }],
                 "tasks": [{
                     "code": "T-14",
                     "title": "Quantize MobileNetV3-Small to INT8 via TensorRT-LLM",
-                    "owner_alias": "Ananya",
+                    "owner_alias": "Ananya Patel",
                     "due_date_str": "2026-03-25",
                     "priority": "high",
                     "origin_decision_code": "D-17",
-                    "excerpt": "Ananya: 'I will take the quantization task and deliver benchmarks by next Wednesday.'",
+                    "excerpt": "Ananya Patel: Agreed. I will take on task T-14: Quantize MobileNetV3-Small to INT8 via TensorRT-LLM and evaluate accuracy drop by March 25.",
                 }],
                 "experiments": [{
                     "code": "EXP-06",
-                    "hypothesis": "MobileNetV3-Small achieves >85% F1 within 20ms latency",
+                    "hypothesis": "MobileNetV3-Small achieves 88.2% F1 within 20ms latency",
                     "model": "MobileNetV3-Small",
-                    "dataset": "LeafSet-v1",
+                    "dataset": "PlantVillage Clean v2",
                     "parameters": {"batch_size": 1, "precision": "FP16"},
-                    "owner_alias": "Karan Mehta",
+                    "owner_alias": "Ananya Patel",
                     "metric": "latency",
                     "metric_value": 14.2,
                     "metric_unit": "ms",
-                    "excerpt": "Benchmarked MobileNetV3-Small on Jetson Nano: 14.2ms latency, 88.2% F1.",
+                    "excerpt": "MobileNetV3-Small achieves 88.2% F1 accuracy on the PlantVillage Clean v2 dataset with an average inference latency of 14.2ms on the Jetson Nano target board.",
                 }],
                 "claims": [{
-                    "statement": "MobileNetV3-Small is robust across lighting conditions with 88.2% F1 score.",
+                    "statement": "ResNet-18 clocked in at 31.8ms, violating thermal and battery constraints",
                     "claim_type": "observation",
-                    "subject": "MobileNetV3-Small",
-                    "metric": "f1_score",
+                    "subject": "ResNet-18",
+                    "metric": "latency",
                     "direction": "increase",
-                    "dataset": "LeafSet-v1",
-                    "value": 88.2,
-                    "excerpt": "Field trials show 88.2% F1 accuracy on LeafSet-v1.",
+                    "dataset": "PlantVillage Clean v2",
+                    "value": 31.8,
+                    "excerpt": "ResNet-18 clocked in at 31.8ms, which violates our thermal and battery constraints for continuous handheld scanning.",
                 }],
                 "discarded_excerpts_count": 0,
             })
