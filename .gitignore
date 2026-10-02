@@ -38,6 +38,9 @@ scratch/
 temp/
 tmp/
 uploads/
+*.db
+*.sqlite
+*.sqlite3
 
 # OS & IDE
 .DS_Store

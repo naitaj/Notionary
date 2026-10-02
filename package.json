@@ -1,0 +1,22 @@
+{
+  "name": "notionary",
+  "version": "1.0.0",
+  "description": "Notionary — Project Intelligence & Reasoning Layer on top of Notion",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "powershell -Command \"& backend\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --port 8000 --app-dir backend\"",
+    "build:frontend": "npm run build --prefix frontend",
+    "test:backend": "powershell -Command \"& backend\\.venv\\Scripts\\python.exe backend\\test_api.py\""
+  },
+  "keywords": [
+    "notion",
+    "reasoning-layer",
+    "project-intelligence",
+    "lineage",
+    "impact-analysis",
+    "graph-rag"
+  ],
+  "author": "Notionary Team",
+  "license": "MIT"
+}

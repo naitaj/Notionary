@@ -1,0 +1,94 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from typing import List, Optional
+from pydantic import BaseModel
+from app.database import get_db
+from app.models.entities import Task, Decision
+
+router = APIRouter(prefix="/tasks", tags=["Tasks"])
+
+class TaskCreate(BaseModel):
+    project_id: str
+    code: str
+    title: str
+    owner: Optional[str] = None
+    priority: Optional[str] = "medium"
+    status: Optional[str] = "todo"
+    origin_decision_id: Optional[str] = None
+    is_blocked: Optional[bool] = False
+    blocked_reason: Optional[str] = None
+
+class TaskResponse(BaseModel):
+    id: str
+    project_id: str
+    code: str
+    title: str
+    status: str
+    owner: Optional[str] = None
+    priority: str
+    origin_decision_id: Optional[str] = None
+    is_blocked: bool
+    blocked_reason: Optional[str] = None
+    notion_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class TaskContextResponse(BaseModel):
+    task: TaskResponse
+    origin_decision: Optional[dict] = None
+    why_explanation: str
+
+@router.get("", response_model=List[TaskResponse])
+async def list_tasks(project_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
+    stmt = select(Task)
+    if project_id:
+        stmt = stmt.where(Task.project_id == project_id)
+    res = await db.execute(stmt)
+    return res.scalars().all()
+
+@router.post("", response_model=TaskResponse)
+async def create_task(data: TaskCreate, db: AsyncSession = Depends(get_db)):
+    task = Task(
+        project_id=data.project_id,
+        code=data.code,
+        title=data.title,
+        owner=data.owner,
+        priority=data.priority or "medium",
+        status=data.status or "todo",
+        origin_decision_id=data.origin_decision_id,
+        is_blocked=data.is_blocked or False,
+        blocked_reason=data.blocked_reason,
+    )
+    db.add(task)
+    await db.commit()
+    await db.refresh(task)
+    return task
+
+@router.get("/{task_id}/context", response_model=TaskContextResponse)
+async def get_task_context(task_id: str, db: AsyncSession = Depends(get_db)):
+    res = await db.execute(select(Task).where(Task.id == task_id))
+    task = res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    decision_dict = None
+    why_text = "This task was created directly as an execution deliverable."
+    if task.origin_decision_id:
+        d_res = await db.execute(select(Decision).where(Decision.id == task.origin_decision_id))
+        decision = d_res.scalar_one_or_none()
+        if decision:
+            decision_dict = {
+                "id": decision.id,
+                "code": decision.code,
+                "statement": decision.statement,
+                "rationale": decision.rationale,
+            }
+            why_text = f"Originates from Decision {decision.code}: '{decision.statement}'. Rationale: {decision.rationale or 'N/A'}"
+
+    return TaskContextResponse(
+        task=TaskResponse.model_validate(task),
+        origin_decision=decision_dict,
+        why_explanation=why_text,
+    )
