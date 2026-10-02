@@ -111,7 +111,18 @@ async def ingest_document(
             )
 
         # Step 6: Completion
-        document.pipeline_status = "completed"
+        if document.doc_type == "meeting_note":
+            from workers.runner import enqueue_job
+            await enqueue_job(
+                db=db,
+                job_type="extraction",
+                payload={"document_id": document.id},
+                project_id=document.project_id
+            )
+            document.pipeline_status = "chunked"
+        else:
+            document.pipeline_status = "completed"
+            
         await db.commit()
         
         if job_id:

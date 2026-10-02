@@ -170,3 +170,55 @@ try:
     import app.ingestion.pipeline  # noqa: F401
 except ImportError:
     pass
+
+@register_handler("extraction")
+async def handle_extraction(db: AsyncSession, job: Job):
+    from app.models.entities import Document
+    from sqlalchemy import select
+    from app.extraction.segment import run_segmentation
+    from app.extraction.extract import run_extraction
+    from app.extraction.excerpt_validator import validate_excerpts
+    from app.extraction.resolvers import resolve_owner, resolve_date
+    from app.extraction.entity_link import link_entity
+    from app.extraction.proposal_builder import build_proposals
+
+    document_id = job.payload.get("document_id")
+    await emit_job_event(db, job.id, "starting", f"Starting extraction for doc {document_id}")
+
+    stmt = select(Document).where(Document.id == document_id)
+    res = await db.execute(stmt)
+    doc = res.scalars().first()
+    if not doc or not doc.content_text:
+        return {"error": "document text missing or doc not found"}
+
+    text = doc.content_text
+    
+    await emit_job_event(db, job.id, "segmenting", "Segmenting document text")
+    seg_res = await run_segmentation(text)
+    
+    await emit_job_event(db, job.id, "extracting", "Extracting schema entities")
+    ext_res = await run_extraction(doc.id, doc.doc_type, text)
+    
+    ext_res = validate_excerpts(ext_res, text)
+    
+    linked_entities = {}
+    for d in ext_res.decisions:
+        link_id, needs_att = await link_entity(db, doc.project_id, "decision", d.code, d.statement)
+        linked_entities[f"decision_{d.code}"] = (link_id, needs_att)
+    for t in ext_res.tasks:
+        link_id, needs_att = await link_entity(db, doc.project_id, "task", t.code, t.title)
+        linked_entities[f"task_{t.code}"] = (link_id, needs_att)
+    for e in ext_res.experiments:
+        link_id, needs_att = await link_entity(db, doc.project_id, "experiment", e.code, e.hypothesis or "")
+        linked_entities[f"experiment_{e.code}"] = (link_id, needs_att)
+        
+    await emit_job_event(db, job.id, "building_proposals", "Building proposals")
+    proposals = build_proposals(doc.project_id, ext_res, linked_entities)
+    
+    db.add_all(proposals)
+    
+    doc.pipeline_status = "extracted"
+    await db.commit()
+    
+    await emit_job_event(db, job.id, "completed", f"Extraction completed. Generated {len(proposals)} proposals.")
+    return {"proposals_count": len(proposals)}

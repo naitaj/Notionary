@@ -1,8 +1,10 @@
 from app.core.config import settings
+from app.config import settings as app_settings
 from app.ai.providers.base import LLMProvider, EmbeddingProvider
 from app.ai.providers.anthropic_provider import AnthropicProvider
 from app.ai.providers.gemini_provider import GeminiProvider
 from app.ai.providers.mock_provider import MockLLMProvider, LocalEmbeddingProvider
+from app.ai.providers.groq_provider import GroqProvider
 
 _llm_instance = None
 _embedding_instance = None
@@ -10,6 +12,10 @@ _embedding_instance = None
 def get_llm_provider() -> LLMProvider:
     global _llm_instance
     if _llm_instance:
+        return _llm_instance
+
+    if app_settings.GROQ_API_KEY:
+        _llm_instance = GroqProvider()
         return _llm_instance
 
     provider_name = settings.DEFAULT_LLM_PROVIDER.lower()
