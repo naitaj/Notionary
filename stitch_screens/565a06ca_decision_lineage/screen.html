@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta content="web_dashboard" name="shell-type"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#0C245C',
+              'navy-light': '#14347c',
+              'navy-dark': '#071638',
+              lime: '#CCFF00',
+              'lime-hover': '#b5e600',
+            },
+            surface: {
+              canvas: '#F7F7F3',
+              card: '#FFFFFF',
+              subtle: '#F0F2F6',
+              muted: '#E6E9EF',
+            },
+            line: '#DDE1E7',
+            ink: {
+              primary: '#0C245C',
+              secondary: '#4A5568',
+              muted: '#718096',
+              light: '#A0AEC0',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#F7F7F3] font-sans text-brand-navy antialiased min-h-screen">
+<!-- Sidebar Fixed Left -->
+<aside class="fixed left-0 top-0 h-screen w-60 bg-[#FFFFFF] border-r border-[#DDE1E7] z-50 flex flex-col justify-between select-none">
+<div class="flex flex-col flex-1 min-h-0">
+<!-- Notionary Brand Header -->
+<div class="h-[60px] px-4 border-b border-[#DDE1E7] flex items-center gap-2.5">
+<div class="w-7 h-7 bg-[#0C245C] rounded flex items-center justify-center shadow-sm">
+<span class="font-mono text-sm font-bold text-[#CCFF00] tracking-tight">N</span>
+</div>
+<div class="flex flex-col">
+<span class="font-sans text-[13px] font-bold tracking-tight text-[#0C245C] leading-none">NOTIONARY</span>
+<span class="font-mono text-[9px] tracking-wider text-ink-muted uppercase leading-none mt-1">PROJECT REASONING LAYER</span>
+</div>
+</div>
+<!-- Navigation links -->
+<div class="flex-1 overflow-y-auto px-2 py-3">
+<nav class="flex flex-col space-y-0.5">
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">radar</span>
+<span class="text-xs font-medium">Overview</span>
+</div>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">inbox</span>
+<span class="text-xs font-medium">Review Inbox</span>
+</div>
+<span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">3</span>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">fact_check</span>
+<span class="text-xs font-medium">Claim Coverage</span>
+</div>
+<span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-subtle text-brand-navy font-semibold">78%</span>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">description</span>
+<span class="text-xs font-medium">Reports</span>
+</div>
+</a>
+<!-- Active Decisions Page -->
+<a aria-current="page" class="group flex items-center justify-between px-3 py-2 rounded-r bg-[#CCFF00]/15 text-[#0C245C] font-semibold border-l-[3px] border-[#CCFF00] transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-[#0C245C]">account_tree</span>
+<span class="text-xs font-semibold">Decisions</span>
+</div>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">task_alt</span>
+<span class="text-xs font-medium">Tasks</span>
+</div>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">warning</span>
+<span class="text-xs font-medium">Contradiction Radar</span>
+</div>
+<span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">1</span>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">insights</span>
+<span class="text-xs font-medium">Impact Analysis</span>
+</div>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">dataset</span>
+<span class="text-xs font-medium">Knowledge</span>
+</div>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">psychology</span>
+<span class="text-xs font-medium">Ask Notionary</span>
+</div>
+</a>
+<a class="group flex items-center justify-between px-3 py-2 rounded-r text-ink-secondary hover:bg-surface-subtle hover:text-[#0C245C] border-l-[3px] border-transparent transition-colors" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-ink-muted group-hover:text-[#0C245C] transition-colors">sync</span>
+<span class="text-xs font-medium">Notion Sync</span>
+</div>
+</a>
+</nav>
+</div>
+<!-- Sidebar Footer -->
+<div class="p-3 border-t border-[#DDE1E7] bg-[#FFFFFF]">
+<div class="p-2.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] mb-2">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-[#CCFF00] border border-[#0C245C]/30 animate-pulse"></span>
+<span class="font-mono text-[11px] font-semibold text-[#0C245C]">Connected</span>
+</div>
+<span class="font-mono text-[10px] text-ink-muted">v1.4</span>
+</div>
+<div class="font-mono text-[10px] text-ink-muted">Last sync: 12s ago</div>
+</div>
+<button class="w-full flex items-center justify-center gap-1.5 py-1.5 text-ink-secondary hover:text-[#0C245C] hover:bg-surface-subtle rounded text-xs transition-colors">
+<span class="material-symbols-outlined text-[15px]">restart_alt</span>
+<span class="text-[11px] font-medium">Reset Demo</span>
+</button>
+</div>
+</div>
+</aside>
+<!-- Main Content Shell -->
+<div class="pl-60">
+<!-- Top Fixed Bar -->
+<header class="fixed top-0 left-60 right-0 h-[60px] bg-[#FFFFFF] border-b border-[#DDE1E7] z-40 flex items-center justify-between px-8">
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs font-bold text-[#0C245C] tracking-wide">PROJECT REASONING LAYER</span>
+<span class="text-ink-light text-xs">/</span>
+<span class="font-mono text-[11px] px-2 py-0.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-[#0C245C] font-semibold">KBC-NOTION-02</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- Project Selector -->
+<div class="flex items-center gap-2 px-3 py-1.5 rounded border border-[#DDE1E7] bg-[#F7F7F3] text-[#0C245C] text-xs font-medium shadow-sm hover:border-[#0C245C]/40 transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[15px] text-[#0C245C]">folder_open</span>
+<span>LeafGuard · On-Device Model</span>
+<span class="material-symbols-outlined text-[15px] text-ink-muted">unfold_more</span>
+</div>
+<!-- Evidence Traceable Signature Badge -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#CCFF00] border border-[#0C245C]/20 shadow-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-[#0C245C]"></span>
+<span class="font-mono text-[11px] font-bold text-[#0C245C] tracking-wider uppercase">Evidence Traceable</span>
+</div>
+<!-- User Profile -->
+<div class="flex items-center gap-2.5 pl-2 border-l border-[#DDE1E7]">
+<div class="w-8 h-8 rounded-full bg-[#0C245C] flex items-center justify-center ring-2 ring-[#CCFF00]/40 text-[#CCFF00]">
+<span class="material-symbols-outlined text-[17px]">person</span>
+</div>
+<div class="flex flex-col text-left">
+<span class="text-[12px] font-bold text-[#0C245C] leading-tight">RI · Rohan</span>
+<span class="font-mono text-[10px] text-ink-muted leading-none">Lead Architect</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="relative pt-[60px] min-h-screen bg-[#F7F7F3]">
+<div class="max-w-[1340px] mx-auto p-8">
+<div class="flex flex-col w-full">
+<!-- Architectural Lineage Breadcrumb & Live Status Bar -->
+<div class="flex flex-col gap-2 mb-6">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5 font-mono text-[11px] text-ink-muted uppercase tracking-wider">
+<span>REASONING GRAPH</span>
+<span>/</span>
+<span>LINEAGE MATRIX</span>
+<span>/</span>
+<span class="text-[#0C245C] font-semibold">TRACEABILITY RUN 09.28</span>
+</div>
+<div class="flex items-center gap-2.5">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#CCFF00]/25 text-[#0C245C] font-mono text-xs font-semibold border border-[#0C245C]/15">
+<span class="w-1.5 h-1.5 rounded-full bg-[#0C245C]"></span>
+                  Formal Soundness: 94.8%
+                </span>
+<button class="px-3 py-1.5 rounded bg-[#FFFFFF] border border-[#DDE1E7] hover:border-[#0C245C] text-[#0C245C] text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#0C245C]">account_tree</span>
+                  Export Audit Graph
+                </button>
+</div>
+</div>
+<!-- Headline Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mt-1">
+<div>
+<h1 class="text-3xl font-bold tracking-tight text-[#0C245C]">Decision Lineage</h1>
+<p class="text-sm text-ink-secondary max-w-3xl mt-1 leading-relaxed">
+<span class="font-bold text-[#0C245C]">Why?</span> — Direct, empirical traceability from lab benchmarks to architectural verdicts and downstream sprint execution.
+                </p>
+</div>
+<!-- Live Filter Indicator -->
+<div class="flex items-center gap-2 self-start md:self-auto bg-[#FFFFFF] border border-[#DDE1E7] px-3 py-1.5 rounded shadow-xs">
+<span class="font-mono text-xs text-ink-muted">Graph Traversal:</span>
+<span class="font-mono text-xs text-[#0C245C] font-bold">Bidirectional Strict</span>
+<span class="material-symbols-outlined text-[16px] text-[#0C245C]">hub</span>
+</div>
+</div>
+<!-- Decision Switcher Pills -->
+<div class="flex items-center gap-2 overflow-x-auto pb-1 mt-3">
+<button class="px-3.5 py-2 rounded bg-[#0C245C] text-[#FFFFFF] font-mono text-xs font-semibold flex items-center gap-2 shadow-sm transition-transform active:scale-95">
+<span class="w-2 h-2 rounded-full bg-[#CCFF00]"></span>
+<span>D-17: Use Model B</span>
+<span class="bg-[#CCFF00] text-[#0C245C] px-1.5 py-0.5 rounded text-[10px] font-bold tracking-wide">Active (v2)</span>
+</button>
+<button class="px-3.5 py-2 rounded bg-[#FFFFFF] hover:bg-surface-subtle text-ink-secondary border border-[#DDE1E7] font-mono text-xs flex items-center gap-2 transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-ink-muted"></span>
+<span class="text-[#0C245C] font-medium">D-18: Field Dataset Protocol</span>
+<span class="text-[10px] text-ink-muted">Under Review</span>
+</button>
+<button class="px-3.5 py-2 rounded bg-[#FFFFFF] hover:bg-surface-subtle text-ink-secondary border border-[#DDE1E7] font-mono text-xs flex items-center gap-2 transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-line"></span>
+<span class="line-through text-ink-muted">D-12: Model A Cloud Fallback</span>
+<span class="bg-[#F7F7F3] px-1.5 py-0.5 rounded text-[10px] text-ink-muted">Superseded</span>
+</button>
+<button class="px-3.5 py-2 rounded bg-[#FFFFFF] hover:bg-surface-subtle text-ink-secondary border border-[#DDE1E7] font-mono text-xs flex items-center gap-2 transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-line"></span>
+<span class="text-ink-muted">D-10: Baseline ResNet Architecture</span>
+<span class="text-[10px] text-ink-muted">Archived</span>
+</button>
+</div>
+</div>
+<!-- 3-Column Lineage Architecture (Grounding -> Synthesis -> Execution) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start relative">
+<!-- COLUMN 1: Upstream Grounding Layer (4 Cols) -->
+<div class="lg:col-span-4 flex flex-col gap-4">
+<div class="flex items-center justify-between px-1 border-b border-[#DDE1E7] pb-2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs uppercase tracking-wider font-bold text-[#0C245C]">01 / Grounding Layer</span>
+<span class="h-2 w-2 rounded-full bg-[#CCFF00] border border-[#0C245C]"></span>
+</div>
+<span class="font-mono text-xs text-ink-muted">4 Inputs Bound</span>
+</div>
+<!-- Card: EXP-06 -->
+<div class="p-5 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] shadow-xs relative overflow-hidden group hover:border-[#0C245C] transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#CCFF00]"></div>
+<div class="flex items-start justify-between mb-2.5">
+<span class="font-mono text-[11px] px-2 py-0.5 rounded bg-surface-subtle text-[#0C245C] font-semibold border border-[#DDE1E7]">EXP-06 · Run Output</span>
+<span class="font-mono text-[10px] px-2 py-0.5 rounded bg-[#CCFF00] text-[#0C245C] font-bold flex items-center gap-1 border border-[#0C245C]/20">
+<span class="material-symbols-outlined text-[13px]">verified</span>
+                    Verified Source
+                  </span>
+</div>
+<h3 class="text-sm font-bold text-[#0C245C] mb-1.5">MobileNetV3 + Augmentation Lab Test</h3>
+<p class="text-xs text-ink-secondary mb-3 leading-relaxed">
+                  Top-1 lab accuracy reached 91.2% with a 14 MB frozen weight footprint and 64ms inference latency on test Snapdragon 680 target.
+                </p>
+<!-- Metric Tile -->
+<div class="p-3 rounded bg-[#F7F7F3] border border-[#DDE1E7] flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-mono text-[10px] text-ink-muted uppercase tracking-wider">Top-1 Accuracy</span>
+<span class="text-lg font-bold text-[#0C245C]">91.2%</span>
+</div>
+<svg class="w-24 h-8 text-[#0C245C]" fill="none" viewbox="0 0 96 32" xmlns="http://www.w3.org/2000/svg">
+<path d="M2 28L18 24L34 26L50 14L66 18L82 6L94 4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></path>
+<circle cx="94" cy="4" fill="#CCFF00" r="3.5" stroke="#0C245C" stroke-width="1.5"></circle>
+</svg>
+<div class="flex flex-col text-right">
+<span class="font-mono text-[10px] text-ink-muted uppercase tracking-wider">Latency</span>
+<span class="font-mono text-sm text-[#0C245C] font-bold">64ms</span>
+</div>
+</div>
+</div>
+<!-- Card: Literature Citation R-02 -->
+<div class="p-5 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] shadow-xs relative overflow-hidden group hover:border-[#0C245C] transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-ink-muted"></div>
+<div class="flex items-start justify-between mb-2">
+<span class="font-mono text-[11px] px-2 py-0.5 rounded bg-surface-subtle text-[#0C245C] font-semibold border border-[#DDE1E7]">R-02 · Literature Citation</span>
+<span class="font-mono text-[11px] text-ink-muted">ArXiv:2403.0118</span>
+</div>
+<h4 class="text-sm font-bold text-[#0C245C] mb-1">Plant Disease Benchmark Compendium</h4>
+<p class="text-xs text-ink-secondary mb-2.5 leading-relaxed">
+                  Empirical finding: Geometric crop-augmentation yields up to a +12% generalization boost in non-uniform daylight field settings.
+                </p>
+<div class="flex items-center gap-1.5 text-ink-muted font-mono text-[11px]">
+<span class="material-symbols-outlined text-[15px] text-[#0C245C]">auto_stories</span>
+<span>Indexed in Knowledge Base · 8 citations internal</span>
+</div>
+</div>
+<!-- Card: Requirement DOC-06 -->
+<div class="p-5 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] shadow-xs relative overflow-hidden group hover:border-[#0C245C] transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#0C245C]"></div>
+<div class="flex items-start justify-between mb-2">
+<span class="font-mono text-[11px] px-2 py-0.5 rounded bg-surface-subtle text-[#0C245C] font-semibold border border-[#DDE1E7]">DOC-06 · Requirement</span>
+<span class="font-mono text-[10px] text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded font-bold uppercase tracking-wide">Strict Constraint</span>
+</div>
+<h4 class="text-sm font-bold text-[#0C245C] mb-1">Offline Edge Inference Limit</h4>
+<p class="text-xs text-ink-secondary mb-2.5 leading-relaxed">
+                  Target APK binary overhead must remain &lt;= 20 MB RAM allocation to ensure background survivability on 2GB RAM Indian-market handsets.
+                </p>
+<div class="w-full bg-[#F7F7F3] rounded-full h-2 border border-[#DDE1E7] overflow-hidden">
+<div class="bg-[#0C245C] h-full" style="width: 70%"></div>
+</div>
+<div class="flex justify-between items-center mt-1.5 font-mono text-[10px] text-ink-muted">
+<span>Current Target: 14 MB</span>
+<span class="font-semibold text-[#0C245C]">Ceiling: 20 MB</span>
+</div>
+</div>
+<!-- Alert: Contradiction Radar C-03 -->
+<div class="p-5 rounded-lg bg-red-50/60 border border-red-200 shadow-xs relative overflow-hidden">
+<div class="flex items-start justify-between mb-2">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-red-600 text-[18px]">warning</span>
+<span class="font-mono text-xs font-bold text-red-700 tracking-wide uppercase">Contradiction Radar C-03</span>
+</div>
+<span class="font-mono text-[10px] px-2 py-0.5 rounded bg-red-100 text-red-800 font-bold border border-red-200">Active Tension</span>
+</div>
+<h4 class="text-sm font-bold text-red-950 mb-1">EXP-09: Field-Image Drop (78.5%)</h4>
+<p class="text-xs text-red-900/80 leading-relaxed mb-3">
+                  Initial real-farm deployment batches in Maharashtra exposed sharp drop from 91.2% to 78.5% due to high midday specular reflection.
+                </p>
+<div class="pt-2 border-t border-red-200/60 flex items-center justify-between text-xs font-semibold text-red-800">
+<span class="font-mono text-[11px]">Resolution Task T-15 Triggered</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</div>
+</div>
+</div>
+<!-- COLUMN 2: Synthesis Node (Center Focus) - 4 cols -->
+<div class="lg:col-span-4 flex flex-col gap-4">
+<div class="flex items-center justify-between px-1 border-b border-[#DDE1E7] pb-2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs uppercase tracking-wider font-bold text-[#0C245C]">02 / Synthesis Node</span>
+<span class="h-2 w-2 rounded-full bg-[#0C245C]"></span>
+</div>
+<span class="font-mono text-xs px-2 py-0.5 rounded bg-[#0C245C] text-[#CCFF00] font-bold">Accepted · v2</span>
+</div>
+<!-- Main Governing Decision Card -->
+<div class="p-6 rounded-lg bg-[#FFFFFF] border-2 border-[#0C245C] shadow-sm relative flex flex-col justify-between">
+<div>
+<!-- Header tag -->
+<div class="flex items-center justify-between mb-3.5">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-1 rounded bg-[#0C245C] text-[#CCFF00] font-mono text-xs font-bold tracking-wider">D-17</span>
+<span class="font-mono text-xs text-ink-muted">UUID: #DEC-8802-91B</span>
+</div>
+<div class="flex items-center gap-1 px-2 py-0.5 rounded bg-[#CCFF00]/30 border border-[#0C245C]/20 text-[#0C245C] font-mono text-[11px] font-bold">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<span>Committed</span>
+</div>
+</div>
+<!-- Core Statement -->
+<h2 class="text-lg font-bold text-[#0C245C] leading-snug mb-4">
+                    Deploy Model B (MobileNetV3 + Augmentation) as primary on-device classifier.
+                  </h2>
+<!-- Provenance Details Grid -->
+<div class="p-3.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] mb-4 flex flex-col gap-2">
+<div class="flex items-center justify-between text-xs">
+<span class="text-ink-muted font-medium">Decision Date:</span>
+<span class="text-[#0C245C] font-semibold">Sep 21, 2026 (Refined Sep 28)</span>
+</div>
+<div class="flex items-center justify-between text-xs">
+<span class="text-ink-muted font-medium">Deciding Authority:</span>
+<span class="text-[#0C245C] font-semibold flex items-center gap-1.5">
+<span class="w-4 h-4 rounded-full bg-[#0C245C] text-[#CCFF00] text-[9px] flex items-center justify-center font-bold">R</span>
+                        Rohan (Lead Architect)
+                      </span>
+</div>
+<div class="flex items-center justify-between text-xs">
+<span class="text-ink-muted font-medium">Deliberation Origin:</span>
+<span class="font-mono text-[11px] text-[#0C245C] font-semibold bg-[#FFFFFF] px-2 py-0.5 rounded border border-[#DDE1E7]">Meeting M-04 · Audio Log Sync</span>
+</div>
+</div>
+<!-- Official Rationale -->
+<div class="mb-4">
+<span class="font-mono text-[11px] uppercase tracking-wider text-ink-muted font-bold block mb-1">Official Rationale</span>
+<p class="text-xs text-[#0C245C] leading-relaxed">
+                      Maintains complete offline capability strictly under the 20 MB APK RAM quota while preserving high lab reliability (91.2%). ResNet-50 was firmly rejected due to a 98 MB footprint violating peasant-tier handset constraints in rural pilot clusters.
+                    </p>
+</div>
+<!-- Evaluated Alternatives -->
+<div class="mb-5">
+<span class="font-mono text-[11px] uppercase tracking-wider text-ink-muted font-bold block mb-2">Evaluated &amp; Rejected Alternatives</span>
+<div class="space-y-2">
+<div class="p-2.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] flex items-start justify-between">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-[#0C245C]">Alt 1: Model A (ResNet-50 Full)</span>
+<span class="text-[11px] text-ink-secondary">98 MB footprint · Exceeds limits by 490%</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-red-100 text-red-800 font-mono text-[10px] font-bold uppercase border border-red-200">Size Veto</span>
+</div>
+<div class="p-2.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] flex items-start justify-between">
+<div class="flex flex-col">
+<span class="text-xs font-bold text-[#0C245C]">Alt 2: Cloud Inference API</span>
+<span class="text-[11px] text-ink-secondary">Zero edge overhead · High precision</span>
+</div>
+<span class="px-2 py-0.5 rounded bg-red-100 text-red-800 font-mono text-[10px] font-bold uppercase border border-red-200">Connectivity Veto</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Primary CTA Button in Co-Primary Electric Lime -->
+<div class="pt-3 border-t border-[#DDE1E7] flex flex-col gap-2">
+<button class="w-full py-3 px-4 rounded bg-[#CCFF00] hover:bg-[#b8e600] text-[#0C245C] font-bold text-xs flex items-center justify-center gap-2 border border-[#0C245C]/20 shadow-sm transition-all active:scale-[0.99]">
+<span>Simulate Change (What-If Impact)</span>
+<span class="material-symbols-outlined text-[17px] font-bold">alt_route</span>
+</button>
+<div class="flex items-center justify-between px-1 text-ink-muted font-mono text-[10px]">
+<span>Lineage Depth: 3 levels</span>
+<span>Dependents: 5 Work Items</span>
+</div>
+</div>
+</div>
+<!-- Consistency Engine Status Box -->
+<div class="p-4 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] text-[#0C245C] flex items-center justify-between shadow-xs">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-[#0C245C] text-[#CCFF00] flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mono text-xs font-bold uppercase">Consistency Engine</span>
+<span class="text-xs text-ink-secondary">0 dangling commitments detected</span>
+</div>
+</div>
+<span class="w-3 h-3 rounded-full bg-[#CCFF00] border-2 border-[#0C245C]"></span>
+</div>
+</div>
+<!-- COLUMN 3: Downstream Execution Horizon (4 Cols) -->
+<div class="lg:col-span-4 flex flex-col gap-4">
+<div class="flex items-center justify-between px-1 border-b border-[#DDE1E7] pb-2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs uppercase tracking-wider font-bold text-[#0C245C]">03 / Execution Horizon</span>
+<span class="h-2 w-2 rounded-full bg-[#CCFF00] border border-[#0C245C]"></span>
+</div>
+<span class="font-mono text-xs text-ink-muted">5 Dependent Items</span>
+</div>
+<!-- Tasks List -->
+<div class="flex flex-col gap-3">
+<!-- Task T-12 -->
+<div class="p-4 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] shadow-xs hover:border-[#0C245C] transition-colors">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs px-2 py-0.5 rounded bg-[#0C245C] text-[#CCFF00] font-bold">T-12</span>
+<span class="text-xs font-semibold text-ink-muted">Sprint 14</span>
+</div>
+<span class="font-mono text-[10px] px-2 py-0.5 rounded bg-[#CCFF00] text-[#0C245C] font-bold flex items-center gap-1 border border-[#0C245C]/20">
+<span class="material-symbols-outlined text-[13px]">check_circle</span>
+                      Completed
+                    </span>
+</div>
+<h4 class="text-sm font-bold text-[#0C245C] mb-1">Train Model B with Augmentation</h4>
+<p class="text-xs text-ink-secondary mb-2 leading-relaxed">
+                    Completed by <span class="font-bold text-[#0C245C]">Ananya</span>. 120 epochs run on cluster GPU nodes using synthetic leaf rotate seeds.
+                  </p>
+<div class="font-mono text-[10px] text-ink-muted flex items-center gap-1 bg-[#F7F7F3] p-1.5 rounded border border-[#DDE1E7]">
+<span class="material-symbols-outlined text-[14px] text-[#0C245C]">link</span>
+                    Artifact: weights-v2-mobilenet.onnx
+                  </div>
+</div>
+<!-- Task T-14 -->
+<div class="p-4 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] shadow-xs relative hover:border-[#0C245C] transition-colors">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs px-2 py-0.5 rounded bg-[#0C245C] text-[#CCFF00] font-bold">T-14</span>
+<span class="text-xs font-semibold text-ink-muted">Sprint 15</span>
+</div>
+<span class="font-mono text-[10px] px-2 py-0.5 rounded bg-red-100 text-red-800 font-bold border border-red-200 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">hourglass_top</span>
+                      Blocked / Quant Bug
+                    </span>
+</div>
+<h4 class="text-sm font-bold text-[#0C245C] mb-1">Quantize Model for Android APK</h4>
+<p class="text-xs text-ink-secondary mb-2 leading-relaxed">
+                    Assigned to <span class="font-bold text-[#0C245C]">Meera</span>. INT8 dynamic quantization triggering numerical overflow on DepthwiseConv2D layer.
+                  </p>
+<div class="p-2 rounded bg-red-50 border border-red-200 font-mono text-[11px] text-red-800 flex items-center gap-1.5 font-medium">
+<span class="material-symbols-outlined text-[14px]">block</span>
+<span>Blocks Release Milestone MS-2</span>
+</div>
+</div>
+<!-- Task T-15 -->
+<div class="p-4 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] shadow-xs hover:border-[#0C245C] transition-colors">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="font-mono text-xs px-2 py-0.5 rounded bg-[#0C245C] text-[#CCFF00] font-bold">T-15</span>
+<span class="text-xs font-semibold text-ink-muted">Sprint 15</span>
+</div>
+<span class="font-mono text-[10px] px-2 py-0.5 rounded bg-[#CCFF00]/40 text-[#0C245C] font-bold border border-[#0C245C]/20">
+                      Due Oct 5
+                    </span>
+</div>
+<h4 class="text-sm font-bold text-[#0C245C] mb-1">Build Automated Augmentation Pipeline</h4>
+<p class="text-xs text-ink-secondary mb-2 leading-relaxed">
+                    Assigned to <span class="font-bold text-[#0C245C]">Ananya</span>. Triggered specifically by Contradiction C-03 to simulate specular midday flare.
+                  </p>
+<div class="flex items-center justify-between text-ink-muted font-mono text-[10px]">
+<span class="font-medium text-[#0C245C]">In Review Queue</span>
+<span class="font-bold text-[#0C245C]">Progress: 60%</span>
+</div>
+</div>
+<!-- Deliverable DL-02 -->
+<div class="p-4 rounded-lg bg-[#0C245C] text-[#FFFFFF] flex flex-col gap-2 shadow-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[11px] px-2 py-0.5 rounded bg-[#CCFF00] text-[#0C245C] font-bold">DL-02</span>
+<span class="text-sm font-bold text-[#FFFFFF]">Demo APK Release</span>
+</div>
+<span class="font-mono text-[10px] font-bold text-[#CCFF00] tracking-wide uppercase">MS-2 Milestone</span>
+</div>
+<div class="flex items-center justify-between font-mono text-[10px] text-white/70">
+<span>Target: Rural Field Pilot</span>
+<span class="text-[#CCFF00]">Est. Date: Oct 12</span>
+</div>
+</div>
+<!-- Deliverable DL-01 -->
+<div class="p-4 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] shadow-xs text-[#0C245C] flex flex-col gap-2 hover:border-[#0C245C] transition-colors">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[11px] px-2 py-0.5 rounded bg-surface-subtle text-[#0C245C] font-bold border border-[#DDE1E7]">DL-01</span>
+<span class="text-sm font-bold text-[#0C245C]">Benchmark Evaluation Report</span>
+</div>
+<span class="font-mono text-[11px] text-ink-muted">Final Draft</span>
+</div>
+<p class="text-xs text-ink-secondary">
+                    Includes all ROC curves comparing Lab baseline vs Model B.
+                  </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Temporal Lineage / As-Of Control Bar -->
+<div class="mt-8 p-6 rounded-lg bg-[#FFFFFF] border border-[#DDE1E7] shadow-xs flex flex-col gap-4">
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-[#DDE1E7] pb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#0C245C] text-[20px]">history_toggle_off</span>
+<span class="text-sm font-bold text-[#0C245C]">Temporal Time Travel ("As-Of" Replay Engine)</span>
+</div>
+<div class="flex items-center gap-2.5">
+<span class="font-mono text-xs text-ink-muted">Viewing active belief state as of:</span>
+<span class="px-2.5 py-1 rounded bg-[#CCFF00] text-[#0C245C] font-mono text-xs font-bold border border-[#0C245C]/20 shadow-xs">
+                  Current (Oct 3, 2026)
+                </span>
+</div>
+</div>
+<!-- Timeline Scrubber / Node Selector -->
+<div class="relative py-4 px-2">
+<div class="absolute left-6 right-6 top-1/2 -translate-y-1/2 h-0.5 bg-[#DDE1E7]"></div>
+<div class="relative flex items-center justify-between">
+<!-- Milestone Sep 3 -->
+<button class="flex flex-col items-center group focus:outline-none">
+<div class="w-4 h-4 rounded-full bg-[#FFFFFF] border-2 border-ink-muted group-hover:border-[#0C245C] group-hover:scale-125 transition-all"></div>
+<span class="font-mono text-[11px] font-semibold text-ink-muted mt-2">Sep 3</span>
+<span class="text-[11px] text-ink-secondary">D-10 Baseline</span>
+</button>
+<!-- Milestone Sep 10 -->
+<button class="flex flex-col items-center group focus:outline-none">
+<div class="w-4 h-4 rounded-full bg-[#FFFFFF] border-2 border-ink-muted group-hover:border-[#0C245C] group-hover:scale-125 transition-all"></div>
+<span class="font-mono text-[11px] font-semibold text-ink-muted mt-2">Sep 10</span>
+<span class="text-[11px] text-ink-secondary">D-12 Server Focus</span>
+</button>
+<!-- Milestone Sep 21 -->
+<button class="flex flex-col items-center group focus:outline-none">
+<div class="w-5 h-5 rounded-full bg-[#0C245C] text-[#CCFF00] text-[10px] flex items-center justify-center font-bold ring-4 ring-[#FFFFFF]">
+                    ✓
+                  </div>
+<span class="font-mono text-[11px] font-bold text-[#0C245C] mt-2">Sep 21</span>
+<span class="text-[11px] font-semibold text-[#0C245C]">D-17 Model B Selected</span>
+</button>
+<!-- Milestone Sep 28 -->
+<button class="flex flex-col items-center group focus:outline-none">
+<div class="w-4 h-4 rounded-full bg-[#CCFF00] border-2 border-[#0C245C] group-hover:scale-125 transition-all"></div>
+<span class="font-mono text-[11px] font-bold text-[#0C245C] mt-2">Sep 28</span>
+<span class="text-[11px] text-ink-secondary">D-17 v2 Refined</span>
+</button>
+<!-- Milestone Oct 3 (Live Active) -->
+<button class="flex flex-col items-center group focus:outline-none">
+<div class="w-5 h-5 rounded-full bg-[#CCFF00] ring-4 ring-[#0C245C] animate-pulse flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-[#0C245C]"></span>
+</div>
+<span class="font-mono text-[11px] font-bold text-[#0C245C] mt-2">Oct 3 (Live)</span>
+<span class="text-[11px] text-[#0C245C] font-bold">T-15 Active &amp; Blocked T-14</span>
+</button>
+</div>
+</div>
+<!-- Timeline Footer Explainer -->
+<div class="flex items-center justify-between text-ink-muted font-mono text-[11px] pt-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-[#0C245C]">tune</span>
+<span>Drag scrubber or click milestones to view historical reasoning graphs before contradiction C-03 emerged.</span>
+</div>
+<button class="text-[#0C245C] hover:underline font-bold">Reset to Head Timestamp</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

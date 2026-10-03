@@ -1,0 +1,333 @@
+{
+  "screenshot": {
+    "name": "projects/17568067804049126122/screens/85dfbdc8c9294e7f99fa9934c241befb/fileEntries/screenshot",
+    "downloadUrl": "https://lh3.googleusercontent.com/aida/AEtjO1WZnG99y9bQsepGCYvlxD1EAbg2wR8qoCGTjix0BG62ibhWDnKpRaqyxonxjimzbP2URueoWv2EZZY0jbE6UKXnRWpJO4JHKLskMALmzXTqmdIWVqfydgw6k2FQjrPbO_3MliVIw2TBU_bwOcip8e9-a9SC7dfFDN9CYTal8MaXt7X50Ah-6rKTqpk1TU3JcrosVOLCgEbtNk9LTz1wvGqtnz8sBE3WkJH9WThKh3vvJelvCYwLdVi7MLxT"
+  },
+  "htmlCode": {
+    "name": "projects/17568067804049126122/screens/85dfbdc8c9294e7f99fa9934c241befb/fileEntries/html",
+    "downloadUrl": "https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzAwMDY1Y2U4ZjY4Y2ZkMGQwMjA3OTFmMDY2MTdjNmRmEgsSBxCD_KqNkwoYAZIBJAoKcHJvamVjdF9pZBIWQhQxNzU2ODA2NzgwNDA0OTEyNjEyMg&filename=&opi=89354086",
+    "mimeType": "text/html"
+  },
+  "id": "85dfbdc8c9294e7f99fa9934c241befb",
+  "generatedBy": "HatterAgent",
+  "width": "2560",
+  "height": "2610",
+  "title": "Overview · Six-Dimension Project Health Radar (Navy & Lime)",
+  "prompt": "Redo the Six-Dimension Project Health Radar screen with #0C245C (Deep Precision Navy) and #CCFF00 (Electric Lime) as co-primary colors.\n- Page background: warm off-white #F7F7F3. Card backgrounds: #FFFFFF with crisp 1px borders #DDE1E7.\n- Sidebar: Fixed 240px wide, Notionary logo with #0C245C deep navy and #CCFF00 electric lime accent, 11 navigation items with Overview active (accented with #CCFF00 left border and subtle tint). Bottom Notion status showing 'Connected' with #CCFF00 live pulse dot.\n- Top Header: PROJECT REASONING LAYER / KBC-NOTION-02, LeafGuard · On-Device Model dropdown, 'Evidence Traceable' badge in #CCFF00 with #0C245C text, Rohan avatar in #0C245C.\n- Header Hero: 'Project Health · Six-Dimension Radar', subtitle 'A live view of execution, evidence, decisions and knowledge consistency.' Action buttons: 'Claim Coverage' (prominent CTA in bg-[#CCFF00] text-[#0C245C] font-semibold hover:bg-[#b8e600]) and 'Weekly Report' (border border-[#DDE1E7] bg-white text-[#0C245C]).\n- Composite Health Score Banner: 82% Overall Project Health in large #0C245C bold font, circular/arc visual indicator with #CCFF00 accent stroke, status pill cluster (4 Healthy in #CCFF00 badge, 1 Warning in amber, 1 Contradiction in rose).\n- 6-Dimension Health Grid (3x2):\n  1. Execution Health: 91% on-track, 1 blocked item (T-14)\n  2. Evidence Coverage: 78% claims backed by empirical experiments (lime badge)\n  3. Documentation Health: Stale flag on DOC-05 Architecture v1\n  4. Decision Stability: 1 superseded in 14d, 100% justified\n  5. Dependency Health: Zero circular dependencies, 1 queue wait\n  6. Knowledge Consistency: 1 active contradiction (EXP-06 lab vs EXP-09 field)\n- Lower Section: Two-column split between Rule-Based Blocked Tasks (T-14 Quantize Model for Android, origin D-17) and Recent Governing Decisions (D-17 Deploy Model B with lime ACTIVE tag, rationale excerpt, and 'View Lineage' link).\n- Restrained, legible typography using Inter and JetBrains Mono for metrics and IDs. No dark mode canvas, no glowing neon clutter, purely crisp editorial precision.",
+  "name": "projects/17568067804049126122/screens/85dfbdc8c9294e7f99fa9934c241befb",
+  "theme": {
+    "colorMode": "LIGHT",
+    "font": "INTER",
+    "roundness": "ROUND_FOUR",
+    "customColor": "#0c245c",
+    "headlineFont": "INTER",
+    "bodyFont": "INTER",
+    "labelFont": "JETBRAINS_MONO",
+    "namedColors": {
+      "surface_container": "#e6eeff",
+      "surface_container_low": "#eff3ff",
+      "primary_fixed": "#dbe1ff",
+      "on_error_container": "#93000a",
+      "surface_tint": "#495c96",
+      "error_container": "#ffdad6",
+      "on_primary_fixed_variant": "#30447d",
+      "on_secondary": "#ffffff",
+      "surface_bright": "#f8f9ff",
+      "surface_variant": "#d6e3fc",
+      "on_primary_container": "#7a8dcb",
+      "on_secondary_container": "#546b00",
+      "secondary_container": "#c1f100",
+      "primary_container": "#0c245c",
+      "surface_container_lowest": "#ffffff",
+      "surface": "#f8f9ff",
+      "tertiary_fixed": "#dce1ff",
+      "surface_container_high": "#dde9ff",
+      "tertiary_container": "#002169",
+      "inverse_surface": "#243143",
+      "on_background": "#0f1c2e",
+      "outline": "#757681",
+      "secondary_fixed": "#c3f400",
+      "primary_fixed_dim": "#b4c5ff",
+      "on_tertiary_container": "#6b8aec",
+      "tertiary_fixed_dim": "#b5c4ff",
+      "on_tertiary_fixed": "#00164d",
+      "on_error": "#ffffff",
+      "on_secondary_fixed": "#161e00",
+      "inverse_on_surface": "#ebf1ff",
+      "on_surface_variant": "#444650",
+      "tertiary": "#000f3b",
+      "surface_container_highest": "#d6e3fc",
+      "secondary": "#506600",
+      "primary": "#00103a",
+      "secondary_fixed_dim": "#abd600",
+      "inverse_primary": "#b4c5ff",
+      "on_tertiary": "#ffffff",
+      "on_surface": "#0f1c2e",
+      "outline_variant": "#c5c6d1",
+      "error": "#ba1a1a",
+      "on_primary": "#ffffff",
+      "on_tertiary_fixed_variant": "#193f9e",
+      "on_primary_fixed": "#00174b",
+      "background": "#f8f9ff",
+      "on_secondary_fixed_variant": "#3c4d00",
+      "surface_dim": "#cddbf3"
+    },
+    "colorVariant": "FIDELITY",
+    "overridePrimaryColor": "#0c245c",
+    "overrideSecondaryColor": "#ccff00",
+    "overrideTertiaryColor": "#5877d8",
+    "overrideNeutralColor": "#637085",
+    "spacingScale": 2,
+    "typography": {
+      "label-caps": {
+        "fontFamily": "JetBrains Mono",
+        "fontSize": "0.6875rem",
+        "fontWeight": "600",
+        "lineHeight": "1rem",
+        "letterSpacing": "0.06em"
+      },
+      "code-md": {
+        "fontFamily": "JetBrains Mono",
+        "fontSize": "0.8125rem",
+        "fontWeight": "400",
+        "lineHeight": "1.25rem",
+        "letterSpacing": "-0.01em"
+      },
+      "body-lg": {
+        "fontFamily": "Inter",
+        "fontSize": "1rem",
+        "fontWeight": "400",
+        "lineHeight": "1.5rem",
+        "letterSpacing": "-0.01em"
+      },
+      "body-md": {
+        "fontFamily": "Inter",
+        "fontSize": "0.875rem",
+        "fontWeight": "400",
+        "lineHeight": "1.375rem",
+        "letterSpacing": "-0.005em"
+      },
+      "headline-lg": {
+        "fontFamily": "Inter",
+        "fontSize": "1.75rem",
+        "fontWeight": "600",
+        "lineHeight": "2.25rem",
+        "letterSpacing": "-0.02em"
+      },
+      "headline-md": {
+        "fontFamily": "Inter",
+        "fontSize": "1.25rem",
+        "fontWeight": "600",
+        "lineHeight": "1.75rem",
+        "letterSpacing": "-0.015em"
+      },
+      "body-sm": {
+        "fontFamily": "Inter",
+        "fontSize": "0.75rem",
+        "fontWeight": "400",
+        "lineHeight": "1.125rem",
+        "letterSpacing": "0"
+      },
+      "headline-xl-mobile": {
+        "fontFamily": "Inter",
+        "fontSize": "1.875rem",
+        "fontWeight": "600",
+        "lineHeight": "2.25rem",
+        "letterSpacing": "-0.02em"
+      },
+      "headline-xl": {
+        "fontFamily": "Inter",
+        "fontSize": "2.5rem",
+        "fontWeight": "600",
+        "lineHeight": "3rem",
+        "letterSpacing": "-0.03em"
+      },
+      "code-sm": {
+        "fontFamily": "JetBrains Mono",
+        "fontSize": "0.6875rem",
+        "fontWeight": "500",
+        "lineHeight": "1rem",
+        "letterSpacing": "0.02em"
+      }
+    },
+    "spacing": {
+      "space-md": "0.75rem",
+      "space-xs": "0.25rem",
+      "margin-mobile": "1rem",
+      "gutter-mobile": "0.75rem",
+      "space-lg": "1.25rem",
+      "space-sm": "0.5rem",
+      "space-xl": "2rem",
+      "gutter": "1.5rem",
+      "margin": "2rem"
+    },
+    "headlineFontFamily": "Inter",
+    "bodyFontFamily": "Inter",
+    "labelFontFamily": "JetBrains Mono"
+  },
+  "deviceType": "DESKTOP",
+  "screenType": "DESIGN",
+  "screenMetadata": {
+    "agentType": "PRO_AGENT",
+    "status": "COMPLETE"
+  },
+  "designSystem": {
+    "name": "assets/d045e435b2f841b6951d6c5f8de9d18d",
+    "designSystem": {
+      "displayName": "Technical Swiss Precision",
+      "styleGuidelines": "## Brand & Style\n\nThis design system serves technical and scientific research teams requiring high-density workspace intelligence. The aesthetic merges International Typographic Style (Swiss design) with contemporary developer-grade interfaces. The emotional tone is authoritative, highly disciplined, and razor-sharp, reducing cognitive friction while highlighting critical operational data.\n\nKey visual attributes:\n- **Asymmetric Grid Strictness:** Heavy adherence to baseline grids, clear structural partitions, and disciplined hierarchy.\n- **High-Density Legibility:** Deliberate typographic scale with micro-labels and monospaced telemetry tokens alongside clean grotesque headings.\n- **Chromatic Contrast:** Deep, resolute navy anchors the canvas, paired with surgical interventions of electric lime for focal points, live states, and verified assertions.\n\n## Layout & Spacing\n\nThe workspace uses a dense, responsive 12-column grid system anchored to an 8px structural and 4px baseline rhythm:\n\n- **Desktop (1280px+):** 12 columns, fixed 32px canvas margins, 24px gutters. Workspace sidebars and documentation navigation anchor to fixed widths (260px and 320px) while analytical data tables fluidly span the remaining grid space.\n- **Tablet (768px - 1279px):** 8 columns, 24px margins, 16px gutters. Secondary sidebars collapse into toggleable sheet panels.\n- **Mobile (Below 768px):** 4 columns, 16px margins, 12px gutters. Multi-column data layouts reflow into stacked record cards.\n- **Content Density:** Component padding remains compact (`space-xs` to `space-md` for form rows and list items) to sustain maximum data visibility per viewport without visual crowding.\n\n## Elevation & Depth\n\nThis system intentionally rejects heavy drop shadows and faux-skeuomorphic diffusion in favor of structured Swiss planar depth:\n\n- **Base Layer:** The global application canvas rests at `#F7F7F3`.\n- **Structural Elevation:** Cards, panels, modal sheets, and sidebars utilize `#FFFFFF` surrounded by crisp, un-blurred 1px borders (`#DDE1E7`).\n- **Floating Overlays:** Menus, tooltips, and floating command bars utilize a hairline offset rule: `0 4px 16px -2px rgba(12, 36, 92, 0.08)`, framed by a solid 1px `#DDE1E7` boundary.\n- **Active Focus & Stacking:** Active panels do not lift via shadow; instead, their border transitions to `#0C245C` or receives a subtle 1px inner outline in `#5877D8`.\n\n## Components\n\n### Buttons\n- **Primary:** Filled `#0C245C` background, `#FFFFFF` text, crisp 4px radius. On hover, background shifts to a calibrated deep tint (`#16377F`).\n- **Accent (Action/Execute):** Solid `#CCFF00` fill with `#0C245C` text and semi-bold typography. Used strictly for critical path actions (e.g., \"Run Analysis\", \"Publish Spec\").\n- **Secondary / Outline:** Pure white `#FFFFFF` surface with 1px `#DDE1E7` border and `#0C245C` text. Hover state introduces `#F7F7F3` background.\n- **Ghost:** Transparent background, `#637085` text, shifting to `#0C245C` text with `#EBECE8` background on hover.\n\n### Input Fields & Controls\n- **Text Inputs:** `#FFFFFF` background, 1px `#DDE1E7` border, 4px radius, `0.5rem 0.75rem` internal padding. Active focus creates a crisp 1px border ring in `#0C245C`.\n- **Search & Query Bars:** Include fixed left-aligned monospaced parameter tags with `#5877D8` token highlights.\n- **Checkboxes & Radios:** Sharp, compact 16x16px boxes with 1px `#DDE1E7` borders. Checked states fill `#0C245C` with high-contrast `#CCFF00` check glyphs.\n\n### Cards & Data Panels\n- Pure white `#FFFFFF` background bound by a continuous 1px `#DDE1E7` border.\n- Card headers feature an integrated horizontal hairline divider separating header metadata from the card body. Header titles use `headline-md` paired with right-aligned `code-sm` timestamps or status pills.\n\n### Chips, Pills & Tags\n- **Metric Badges:** Pill-shaped, composed of `#F7F7F3` background, 1px `#DDE1E7` perimeter, and `label-caps` in `#0C245C`.\n- **System Telemetry Chips:** `#0C245C` background, `#CCFF00` text rendered in `code-sm` font for real-time status indication.\n- **Reference Chips:** `#5877D8` background at 12% opacity, with `#0C245C` text for linked variables and project identifiers.\n\n### Data Tables & Lists\n- Table header cells use `label-caps` typography in `#637085`, with 1px border-bottom in `#DDE1E7`.\n- Rows maintain a strict 40px compact height with alternating subtle hover highlighting in `#F7F7F3`.\n- Key columns (IDs, hashes, execution metrics) are strictly aligned using `code-md`.",
+      "theme": {
+        "colorMode": "LIGHT",
+        "font": "INTER",
+        "roundness": "ROUND_FOUR",
+        "customColor": "#0c245c",
+        "headlineFont": "INTER",
+        "bodyFont": "INTER",
+        "labelFont": "JETBRAINS_MONO",
+        "namedColors": {
+          "on_tertiary": "#ffffff",
+          "surface_container": "#e6eeff",
+          "on_error_container": "#93000a",
+          "on_secondary_fixed_variant": "#3c4d00",
+          "on_background": "#0f1c2e",
+          "inverse_primary": "#b4c5ff",
+          "outline_variant": "#c5c6d1",
+          "surface_dim": "#cddbf3",
+          "outline": "#757681",
+          "primary_fixed": "#dbe1ff",
+          "primary_container": "#0c245c",
+          "tertiary_container": "#002169",
+          "surface": "#f8f9ff",
+          "secondary_container": "#c1f100",
+          "primary_fixed_dim": "#b4c5ff",
+          "on_tertiary_fixed": "#00164d",
+          "on_secondary": "#ffffff",
+          "primary": "#00103a",
+          "inverse_surface": "#243143",
+          "on_tertiary_fixed_variant": "#193f9e",
+          "secondary": "#506600",
+          "error": "#ba1a1a",
+          "secondary_fixed": "#c3f400",
+          "surface_container_low": "#eff3ff",
+          "tertiary_fixed": "#dce1ff",
+          "on_secondary_container": "#546b00",
+          "on_surface_variant": "#444650",
+          "inverse_on_surface": "#ebf1ff",
+          "on_secondary_fixed": "#161e00",
+          "surface_container_high": "#dde9ff",
+          "surface_tint": "#495c96",
+          "surface_container_lowest": "#ffffff",
+          "tertiary_fixed_dim": "#b5c4ff",
+          "surface_container_highest": "#d6e3fc",
+          "error_container": "#ffdad6",
+          "on_primary": "#ffffff",
+          "on_primary_fixed_variant": "#30447d",
+          "background": "#f8f9ff",
+          "surface_variant": "#d6e3fc",
+          "secondary_fixed_dim": "#abd600",
+          "tertiary": "#000f3b",
+          "on_primary_container": "#7a8dcb",
+          "on_primary_fixed": "#00174b",
+          "on_error": "#ffffff",
+          "on_surface": "#0f1c2e",
+          "surface_bright": "#f8f9ff",
+          "on_tertiary_container": "#6b8aec"
+        },
+        "designMd": "---\nname: Technical Swiss Precision\ncolors:\n  surface: '#f8f9ff'\n  surface-dim: '#cddbf3'\n  surface-bright: '#f8f9ff'\n  surface-container-lowest: '#ffffff'\n  surface-container-low: '#eff3ff'\n  surface-container: '#e6eeff'\n  surface-container-high: '#dde9ff'\n  surface-container-highest: '#d6e3fc'\n  on-surface: '#0f1c2e'\n  on-surface-variant: '#444650'\n  inverse-surface: '#243143'\n  inverse-on-surface: '#ebf1ff'\n  outline: '#757681'\n  outline-variant: '#c5c6d1'\n  surface-tint: '#495c96'\n  primary: '#00103a'\n  on-primary: '#ffffff'\n  primary-container: '#0c245c'\n  on-primary-container: '#7a8dcb'\n  inverse-primary: '#b4c5ff'\n  secondary: '#506600'\n  on-secondary: '#ffffff'\n  secondary-container: '#c1f100'\n  on-secondary-container: '#546b00'\n  tertiary: '#000f3b'\n  on-tertiary: '#ffffff'\n  tertiary-container: '#002169'\n  on-tertiary-container: '#6b8aec'\n  error: '#ba1a1a'\n  on-error: '#ffffff'\n  error-container: '#ffdad6'\n  on-error-container: '#93000a'\n  primary-fixed: '#dbe1ff'\n  primary-fixed-dim: '#b4c5ff'\n  on-primary-fixed: '#00174b'\n  on-primary-fixed-variant: '#30447d'\n  secondary-fixed: '#c3f400'\n  secondary-fixed-dim: '#abd600'\n  on-secondary-fixed: '#161e00'\n  on-secondary-fixed-variant: '#3c4d00'\n  tertiary-fixed: '#dce1ff'\n  tertiary-fixed-dim: '#b5c4ff'\n  on-tertiary-fixed: '#00164d'\n  on-tertiary-fixed-variant: '#193f9e'\n  background: '#f8f9ff'\n  on-background: '#0f1c2e'\n  surface-variant: '#d6e3fc'\ntypography:\n  headline-xl:\n    fontFamily: Inter\n    fontSize: 2.5rem\n    fontWeight: '600'\n    lineHeight: 3rem\n    letterSpacing: -0.03em\n  headline-xl-mobile:\n    fontFamily: Inter\n    fontSize: 1.875rem\n    fontWeight: '600'\n    lineHeight: 2.25rem\n    letterSpacing: -0.02em\n  headline-lg:\n    fontFamily: Inter\n    fontSize: 1.75rem\n    fontWeight: '600'\n    lineHeight: 2.25rem\n    letterSpacing: -0.02em\n  headline-md:\n    fontFamily: Inter\n    fontSize: 1.25rem\n    fontWeight: '600'\n    lineHeight: 1.75rem\n    letterSpacing: -0.015em\n  body-lg:\n    fontFamily: Inter\n    fontSize: 1rem\n    fontWeight: '400'\n    lineHeight: 1.5rem\n    letterSpacing: -0.01em\n  body-md:\n    fontFamily: Inter\n    fontSize: 0.875rem\n    fontWeight: '400'\n    lineHeight: 1.375rem\n    letterSpacing: -0.005em\n  body-sm:\n    fontFamily: Inter\n    fontSize: 0.75rem\n    fontWeight: '400'\n    lineHeight: 1.125rem\n    letterSpacing: '0'\n  code-md:\n    fontFamily: JetBrains Mono\n    fontSize: 0.8125rem\n    fontWeight: '400'\n    lineHeight: 1.25rem\n    letterSpacing: -0.01em\n  code-sm:\n    fontFamily: JetBrains Mono\n    fontSize: 0.6875rem\n    fontWeight: '500'\n    lineHeight: 1rem\n    letterSpacing: 0.02em\n  label-caps:\n    fontFamily: JetBrains Mono\n    fontSize: 0.6875rem\n    fontWeight: '600'\n    lineHeight: 1rem\n    letterSpacing: 0.06em\nrounded:\n  sm: 0.125rem\n  DEFAULT: 0.25rem\n  md: 0.375rem\n  lg: 0.5rem\n  xl: 0.75rem\n  full: 9999px\nspacing:\n  gutter: 1.5rem\n  gutter-mobile: 0.75rem\n  margin: 2rem\n  margin-mobile: 1rem\n  space-xs: 0.25rem\n  space-sm: 0.5rem\n  space-md: 0.75rem\n  space-lg: 1.25rem\n  space-xl: 2rem\n---\n\n## Brand & Style\n\nThis design system serves technical and scientific research teams requiring high-density workspace intelligence. The aesthetic merges International Typographic Style (Swiss design) with contemporary developer-grade interfaces. The emotional tone is authoritative, highly disciplined, and razor-sharp, reducing cognitive friction while highlighting critical operational data.\n\nKey visual attributes:\n- **Asymmetric Grid Strictness:** Heavy adherence to baseline grids, clear structural partitions, and disciplined hierarchy.\n- **High-Density Legibility:** Deliberate typographic scale with micro-labels and monospaced telemetry tokens alongside clean grotesque headings.\n- **Chromatic Contrast:** Deep, resolute navy anchors the canvas, paired with surgical interventions of electric lime for focal points, live states, and verified assertions.\n\n## Colors\n\nThe palette operates under a high-utility paradigm where color implies state and functional category rather than mere ornamentation:\n\n- **Primary Canvas & Surfaces:** The page background uses a warm off-white canvas (`#F7F7F3`), creating an editorial, paper-like foundation. Elevated cards and modular panes use solid `#FFFFFF`.\n- **Primary Navy (`#0C245C`):** Used for primary typography, authoritative framing, critical action triggers, and active tab indicators.\n- **Electric Lime (`#CCFF00`):** Reserved exclusively as a high-visibility accent for active states, selected highlights, progress milestones, and attention-critical alerts. Always set against dark backgrounds (`#0C245C`) to guarantee optimal WCAG AAA contrast.\n- **Supporting Periwinkle (`#5877D8`):** Serves analytical workflows, query builders, interactive filters, and structural metadata tags.\n- **Secondary Neutral (`#637085`):** Drives secondary labels, table headers, breadcrumbs, and inactive glyphs.\n- **Structural Lines (`#DDE1E7`):** Strict 1px delineators that govern panel boundaries, cell dividers, and data matrix grids.\n\n## Typography\n\nThe typographic hierarchy establishes clear informational zoning through two primary typefaces:\n\n- **Inter:** Handles primary editorial headers, document prose, body copy, and UI form labels. Tighter negative tracking (`letterSpacing`) on headings ensures an authentic Swiss look and feel.\n- **JetBrains Mono:** Dedicated to data arrays, operational metrics, document IDs, version tags, and system logs. Monospaced elements bring scientific rigor and alignment precision to multi-column matrices.\n- **Case Conventions:** Section indicators, table category labels, and status badges must use `label-caps` in uppercase styling with widened tracking.\n\n## Layout & Spacing\n\nThe workspace uses a dense, responsive 12-column grid system anchored to an 8px structural and 4px baseline rhythm:\n\n- **Desktop (1280px+):** 12 columns, fixed 32px canvas margins, 24px gutters. Workspace sidebars and documentation navigation anchor to fixed widths (260px and 320px) while analytical data tables fluidly span the remaining grid space.\n- **Tablet (768px - 1279px):** 8 columns, 24px margins, 16px gutters. Secondary sidebars collapse into toggleable sheet panels.\n- **Mobile (Below 768px):** 4 columns, 16px margins, 12px gutters. Multi-column data layouts reflow into stacked record cards.\n- **Content Density:** Component padding remains compact (`space-xs` to `space-md` for form rows and list items) to sustain maximum data visibility per viewport without visual crowding.\n\n## Elevation & Depth\n\nThis system intentionally rejects heavy drop shadows and faux-skeuomorphic diffusion in favor of structured Swiss planar depth:\n\n- **Base Layer:** The global application canvas rests at `#F7F7F3`.\n- **Structural Elevation:** Cards, panels, modal sheets, and sidebars utilize `#FFFFFF` surrounded by crisp, un-blurred 1px borders (`#DDE1E7`).\n- **Floating Overlays:** Menus, tooltips, and floating command bars utilize a hairline offset rule: `0 4px 16px -2px rgba(12, 36, 92, 0.08)`, framed by a solid 1px `#DDE1E7` boundary.\n- **Active Focus & Stacking:** Active panels do not lift via shadow; instead, their border transitions to `#0C245C` or receives a subtle 1px inner outline in `#5877D8`.\n\n## Shapes\n\nThe interface embraces a low-radius, structured profile. All cards, buttons, code blocks, input inputs, and modal dialogs use tight 4px (`0.25rem`) corners (`roundedness: 1`), keeping the visual tone technical, precise, and instrument-like.\n\nExceptions:\n- **Pill Badges:** Dynamic telemetry tags and small operational status counters may use full pill curvature (`9999px`) to visually differentiate metadata from executable buttons.\n- **Dividers & Table Cells:** Sharp 90-degree internal junctions preserving continuous rectilinear grids.\n\n## Components\n\n### Buttons\n- **Primary:** Filled `#0C245C` background, `#FFFFFF` text, crisp 4px radius. On hover, background shifts to a calibrated deep tint (`#16377F`).\n- **Accent (Action/Execute):** Solid `#CCFF00` fill with `#0C245C` text and semi-bold typography. Used strictly for critical path actions (e.g., \"Run Analysis\", \"Publish Spec\").\n- **Secondary / Outline:** Pure white `#FFFFFF` surface with 1px `#DDE1E7` border and `#0C245C` text. Hover state introduces `#F7F7F3` background.\n- **Ghost:** Transparent background, `#637085` text, shifting to `#0C245C` text with `#EBECE8` background on hover.\n\n### Input Fields & Controls\n- **Text Inputs:** `#FFFFFF` background, 1px `#DDE1E7` border, 4px radius, `0.5rem 0.75rem` internal padding. Active focus creates a crisp 1px border ring in `#0C245C`.\n- **Search & Query Bars:** Include fixed left-aligned monospaced parameter tags with `#5877D8` token highlights.\n- **Checkboxes & Radios:** Sharp, compact 16x16px boxes with 1px `#DDE1E7` borders. Checked states fill `#0C245C` with high-contrast `#CCFF00` check glyphs.\n\n### Cards & Data Panels\n- Pure white `#FFFFFF` background bound by a continuous 1px `#DDE1E7` border.\n- Card headers feature an integrated horizontal hairline divider separating header metadata from the card body. Header titles use `headline-md` paired with right-aligned `code-sm` timestamps or status pills.\n\n### Chips, Pills & Tags\n- **Metric Badges:** Pill-shaped, composed of `#F7F7F3` background, 1px `#DDE1E7` perimeter, and `label-caps` in `#0C245C`.\n- **System Telemetry Chips:** `#0C245C` background, `#CCFF00` text rendered in `code-sm` font for real-time status indication.\n- **Reference Chips:** `#5877D8` background at 12% opacity, with `#0C245C` text for linked variables and project identifiers.\n\n### Data Tables & Lists\n- Table header cells use `label-caps` typography in `#637085`, with 1px border-bottom in `#DDE1E7`.\n- Rows maintain a strict 40px compact height with alternating subtle hover highlighting in `#F7F7F3`.\n- Key columns (IDs, hashes, execution metrics) are strictly aligned using `code-md`.",
+        "colorVariant": "FIDELITY",
+        "overridePrimaryColor": "#0c245c",
+        "overrideSecondaryColor": "#ccff00",
+        "overrideTertiaryColor": "#5877d8",
+        "overrideNeutralColor": "#637085",
+        "spacingScale": 2,
+        "typography": {
+          "headline-lg": {
+            "fontFamily": "Inter",
+            "fontSize": "1.75rem",
+            "fontWeight": "600",
+            "lineHeight": "2.25rem",
+            "letterSpacing": "-0.02em"
+          },
+          "code-sm": {
+            "fontFamily": "JetBrains Mono",
+            "fontSize": "0.6875rem",
+            "fontWeight": "500",
+            "lineHeight": "1rem",
+            "letterSpacing": "0.02em"
+          },
+          "headline-xl-mobile": {
+            "fontFamily": "Inter",
+            "fontSize": "1.875rem",
+            "fontWeight": "600",
+            "lineHeight": "2.25rem",
+            "letterSpacing": "-0.02em"
+          },
+          "body-sm": {
+            "fontFamily": "Inter",
+            "fontSize": "0.75rem",
+            "fontWeight": "400",
+            "lineHeight": "1.125rem",
+            "letterSpacing": "0"
+          },
+          "code-md": {
+            "fontFamily": "JetBrains Mono",
+            "fontSize": "0.8125rem",
+            "fontWeight": "400",
+            "lineHeight": "1.25rem",
+            "letterSpacing": "-0.01em"
+          },
+          "headline-md": {
+            "fontFamily": "Inter",
+            "fontSize": "1.25rem",
+            "fontWeight": "600",
+            "lineHeight": "1.75rem",
+            "letterSpacing": "-0.015em"
+          },
+          "body-md": {
+            "fontFamily": "Inter",
+            "fontSize": "0.875rem",
+            "fontWeight": "400",
+            "lineHeight": "1.375rem",
+            "letterSpacing": "-0.005em"
+          },
+          "body-lg": {
+            "fontFamily": "Inter",
+            "fontSize": "1rem",
+            "fontWeight": "400",
+            "lineHeight": "1.5rem",
+            "letterSpacing": "-0.01em"
+          },
+          "headline-xl": {
+            "fontFamily": "Inter",
+            "fontSize": "2.5rem",
+            "fontWeight": "600",
+            "lineHeight": "3rem",
+            "letterSpacing": "-0.03em"
+          },
+          "label-caps": {
+            "fontFamily": "JetBrains Mono",
+            "fontSize": "0.6875rem",
+            "fontWeight": "600",
+            "lineHeight": "1rem",
+            "letterSpacing": "0.06em"
+          }
+        },
+        "spacing": {
+          "gutter-mobile": "0.75rem",
+          "space-xs": "0.25rem",
+          "space-md": "0.75rem",
+          "margin-mobile": "1rem",
+          "space-lg": "1.25rem",
+          "gutter": "1.5rem",
+          "margin": "2rem",
+          "space-xl": "2rem",
+          "space-sm": "0.5rem"
+        },
+        "headlineFontFamily": "Inter",
+        "bodyFontFamily": "Inter",
+        "labelFontFamily": "JetBrains Mono"
+      }
+    },
+    "version": "1"
+  }
+}

@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Notionary — What-If Impact Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              navy: '#0C245C',
+              lime: '#CCFF00',
+              bg: '#F7F7F3',
+              border: '#DDE1E7',
+              muted: '#687282',
+              surface: '#FFFFFF',
+              darktext: '#09152E'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      background-color: #F7F7F3;
+      color: #09152E;
+      font-family: 'Inter', sans-serif;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F1F3F6;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #CCD2DC;
+      border-radius: 3px;
+    }
+    .custom-border {
+      border: 1px solid #DDE1E7;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#F7F7F3] text-[#09152E] antialiased flex">
+<!-- Fixed Sidebar (240px wide) -->
+<aside class="fixed left-0 top-0 h-screen w-[240px] bg-white border-r border-[#DDE1E7] z-50 flex flex-col justify-between select-none">
+<div class="flex flex-col flex-1 min-h-0">
+<!-- App Header / Logo in #0C245C & #CCFF00 -->
+<div class="h-[64px] px-5 border-b border-[#DDE1E7] flex items-center gap-3 bg-white">
+<div class="w-8 h-8 rounded bg-[#0C245C] flex items-center justify-center shadow-sm border border-[#0C245C]">
+<span class="font-mono font-black text-[#CCFF00] text-sm tracking-wider">N</span>
+</div>
+<div class="flex flex-col">
+<span class="font-sans text-sm font-bold tracking-tight text-[#0C245C] leading-none">NOTIONARY</span>
+<span class="font-mono text-[9px] tracking-wider text-[#687282] uppercase mt-1 leading-none">REASONING LAYER</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">radar</span>
+<span>Overview</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">inbox</span>
+<span>Review Inbox</span>
+</div>
+<span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-semibold">3</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">fact_check</span>
+<span>Claim Coverage</span>
+</div>
+<span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[#F1F3F6] text-[#687282] font-semibold">78%</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">description</span>
+<span>Reports</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">account_tree</span>
+<span>Decisions</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+<span>Tasks</span>
+</div>
+</a>
+<!-- Active Navigation item: Impact Analysis with #CCFF00 border bar & subtle highlight -->
+<a class="flex items-center justify-between px-3 py-2 rounded bg-[#0C245C]/[0.04] text-[#0C245C] font-semibold text-xs border-l-[3.5px] border-[#CCFF00] shadow-sm" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px] text-[#0C245C]">insights</span>
+<span>Impact Analysis</span>
+</div>
+<span class="w-1.5 h-1.5 rounded-full bg-[#0C245C]"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">dataset</span>
+<span>Knowledge</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+<span>Ask Notionary</span>
+</div>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded text-[#687282] hover:bg-[#F7F7F3] hover:text-[#0C245C] transition-colors text-xs font-medium" href="#">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-[18px]">sync</span>
+<span>Notion Sync</span>
+</div>
+</a>
+</div>
+</div>
+<!-- Sidebar Footer -->
+<div class="p-3 border-t border-[#DDE1E7] bg-white">
+<div class="p-2.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] mb-2">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-[#506600]"></span>
+<span class="font-mono text-[11px] font-semibold text-[#09152E]">Connected</span>
+</div>
+<span class="font-mono text-[10px] text-[#687282]">v2.4-GRAPH</span>
+</div>
+<div class="font-mono text-[10px] text-[#687282]">Notion Sync: 8s ago</div>
+</div>
+<button class="w-full flex items-center justify-center gap-1.5 py-1.5 text-[#687282] hover:text-[#0C245C] hover:bg-[#F7F7F3] rounded text-xs transition-colors">
+<span class="material-symbols-outlined text-[15px]">restart_alt</span>
+<span class="font-mono text-[11px]">Reset Sandbox</span>
+</button>
+</div>
+</aside>
+<!-- Main Content Layout (Offset for 240px sidebar) -->
+<div class="pl-[240px] flex-1 flex flex-col min-h-screen">
+<!-- Top Header -->
+<header class="h-[64px] bg-white border-b border-[#DDE1E7] sticky top-0 z-40 flex items-center justify-between px-8">
+<div class="flex items-center gap-3">
+<span class="font-mono text-xs font-semibold text-[#0C245C] tracking-wide">PROJECT REASONING LAYER</span>
+<span class="text-[#DDE1E7] text-sm font-light">/</span>
+<span class="font-mono text-[11px] px-2.5 py-1 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-[#0C245C] font-semibold">KBC-NOTION-02</span>
+</div>
+<div class="flex items-center gap-4">
+<!-- Scenario Selector Dropdown in Header -->
+<div class="flex items-center gap-2 px-3 py-1.5 rounded border border-[#DDE1E7] bg-white text-xs text-[#09152E] shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-[#687282]">folder_open</span>
+<span class="font-medium">LeafGuard · On-Device Model</span>
+<span class="material-symbols-outlined text-[16px] text-[#687282]">unfold_more</span>
+</div>
+<!-- Evidence Traceable Badge in #CCFF00 -->
+<div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#CCFF00]/25 border border-[#506600]/40">
+<span class="w-2 h-2 rounded-full bg-[#506600]"></span>
+<span class="font-mono text-[10px] font-bold text-[#0C245C] uppercase tracking-wide">Evidence Traceable</span>
+</div>
+<!-- User Profile -->
+<div class="flex items-center gap-2.5 pl-3 border-l border-[#DDE1E7]">
+<div class="w-8 h-8 rounded-full bg-[#0C245C] flex items-center justify-center text-white text-xs font-semibold font-mono ring-2 ring-[#CCFF00]/40">
+            RH
+          </div>
+<div class="flex flex-col text-left">
+<span class="font-sans text-xs font-bold text-[#0C245C] leading-tight">Rohan I.</span>
+<span class="font-mono text-[10px] text-[#687282] leading-none">Lead Architect</span>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Workspace Container -->
+<main class="flex-1 p-8 max-w-[1360px] w-full mx-auto space-y-6">
+<!-- Page Title & Subheading -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<div class="flex items-center gap-2 mb-1.5">
+<span class="font-mono text-[11px] font-bold uppercase tracking-wider bg-[#0C245C] text-[#CCFF00] px-2 py-0.5 rounded">Deterministic Traversal</span>
+<span class="font-mono text-[11px] text-[#687282]">GRAPH PROPAGATION ENGINE v2.4</span>
+</div>
+<h1 class="text-2xl font-bold tracking-tight text-[#0C245C]">What-If Impact Analysis</h1>
+<p class="text-sm text-[#687282] mt-0.5">
+            Simulate downstream mutations before committing decisions. Trace direct blast radius and cascading invalidations.
+          </p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 px-3 py-1.5 bg-white border border-[#DDE1E7] rounded text-xs font-mono text-[#0C245C] shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-[#506600]">schema</span>
+<span>Directed Acyclic Graph: ACTIVE</span>
+</div>
+<button class="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#DDE1E7] text-[#0C245C] rounded hover:bg-[#F7F7F3] text-xs font-medium shadow-sm transition-colors">
+<span class="material-symbols-outlined text-[16px] text-[#687282]">history</span>
+<span>Run History</span>
+</button>
+</div>
+</div>
+<!-- Simulation Controls Card -->
+<div class="bg-white rounded border border-[#DDE1E7] shadow-sm overflow-hidden">
+<!-- Top Bar: Target Decision Picker & Scenario Toggles -->
+<div class="px-6 py-4 bg-[#FBFBFA] border-b border-[#DDE1E7] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+<div class="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
+<label class="font-mono text-xs font-bold uppercase text-[#0C245C] tracking-wide whitespace-nowrap">Target Decision:</label>
+<div class="relative w-full sm:w-96">
+<select class="w-full h-9 pl-3 pr-8 bg-white border border-[#DDE1E7] rounded text-xs font-medium text-[#0C245C] focus:ring-1 focus:ring-[#0C245C] focus:border-[#0C245C] appearance-none cursor-pointer">
+<option selected="">D-17: Deploy Model B (MobileNetV3 + augmentation)</option>
+<option>D-16: Cloud Inference Strategy for Telemetry Sync</option>
+<option>D-15: Sensor Sample Rate Thresholds</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-2 text-[18px] text-[#687282] pointer-events-none">unfold_more</span>
+</div>
+</div>
+<!-- Scenario toggles ('What-If (Modify)' [Selected with #0C245C bg, white text], 'Revoke', 'Supersede') -->
+<div class="flex items-center gap-1.5 bg-white p-1 rounded border border-[#DDE1E7]">
+<button class="px-3 py-1 rounded text-xs font-semibold bg-[#0C245C] text-white shadow-sm flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-[#CCFF00]"></span>
+              What-If (Modify)
+            </button>
+<button class="px-3 py-1 rounded text-xs font-medium text-[#687282] hover:text-[#0C245C] hover:bg-[#F7F7F3] flex items-center gap-1.5 transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+              Revoke
+            </button>
+<button class="px-3 py-1 rounded text-xs font-medium text-[#687282] hover:text-[#0C245C] hover:bg-[#F7F7F3] flex items-center gap-1.5 transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+              Supersede
+            </button>
+</div>
+</div>
+<!-- Proposed Change Input & Primary Button -->
+<div class="p-6 space-y-4">
+<div class="flex items-center justify-between">
+<label class="font-sans text-xs font-bold text-[#0C245C] flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[18px] text-[#506600]">edit_note</span>
+              Proposed Mutation Rationale &amp; Parameter Diff
+            </label>
+<span class="font-mono text-[11px] text-[#687282]">Linked Evidence: EXP-09 Field Trial Logs (Notion DB #4482)</span>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+<div class="lg:col-span-9">
+<textarea class="w-full p-3 bg-white border border-[#DDE1E7] rounded text-xs font-mono text-[#09152E] focus:ring-1 focus:ring-[#0C245C] focus:border-[#0C245C] leading-relaxed resize-none" rows="2">Switch to Model C (EfficientNet-Lite0) due to sunlight degradation and field drop observed in EXP-09</textarea>
+</div>
+<div class="lg:col-span-3 flex">
+<button class="w-full flex items-center justify-center gap-2 bg-[#CCFF00] hover:bg-[#b8e600] text-[#0C245C] font-semibold text-xs uppercase tracking-wider rounded border border-[#0C245C]/20 shadow-sm transition-all py-3 px-4" id="simulateBtn">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>Simulate Blast Radius</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Blast Radius Metrics (3 Cards) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+<!-- Card 1: Total Affected Items -->
+<div class="bg-white rounded border border-[#DDE1E7] p-5 shadow-sm flex items-start gap-4">
+<div class="w-11 h-11 rounded bg-[#0C245C] text-[#CCFF00] flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[22px]">crisis_alert</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[11px] font-bold text-[#687282] uppercase tracking-wider">Total Affected Items</span>
+<span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+</div>
+<span class="text-2xl font-bold font-mono text-[#0C245C] mt-0.5">5 Items</span>
+<span class="text-xs text-[#687282] mt-0.5 font-medium">Direct: 2 • Cascading: 3</span>
+</div>
+</div>
+<!-- Card 2: 1st-Hop Direct Work -->
+<div class="bg-white rounded border border-[#DDE1E7] p-5 shadow-sm flex items-start gap-4">
+<div class="w-11 h-11 rounded bg-[#CCFF00] text-[#0C245C] border border-[#0C245C]/20 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[22px] font-bold">build_circle</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[11px] font-bold text-[#687282] uppercase tracking-wider">1st-Hop Direct Work</span>
+<span class="w-1.5 h-1.5 rounded-full bg-[#506600]"></span>
+</div>
+<span class="text-2xl font-bold font-mono text-[#0C245C] mt-0.5">2 Tasks</span>
+<span class="text-xs text-[#687282] mt-0.5 truncate font-medium">T-14 Quantize Model, T-15 Augmentation Pipeline</span>
+</div>
+</div>
+<!-- Card 3: 2nd-Hop Cascading Risk -->
+<div class="bg-white rounded border border-[#DDE1E7] p-5 shadow-sm flex items-start gap-4">
+<div class="w-11 h-11 rounded bg-red-50 text-red-700 border border-red-200 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-[22px]">warning</span>
+</div>
+<div class="flex flex-col min-w-0">
+<div class="flex items-center gap-2">
+<span class="font-mono text-[11px] font-bold text-[#687282] uppercase tracking-wider">2nd-Hop Cascading Risk</span>
+<span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+</div>
+<span class="text-2xl font-bold font-mono text-[#0C245C] mt-0.5">1 Deliverable • 1 Milestone</span>
+<span class="text-xs text-[#687282] mt-0.5 truncate font-medium">DL-02 Demo APK, MS-2 Midterm Review</span>
+</div>
+</div>
+</div>
+<!-- Graph Topology Visualizer -->
+<div class="bg-white rounded border border-[#DDE1E7] p-5 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-[#0C245C]">hub</span>
+<span class="text-xs font-bold font-mono text-[#0C245C] uppercase tracking-wide">Graph Propagation Visualizer</span>
+</div>
+<div class="flex items-center gap-4 text-xs font-mono">
+<span class="flex items-center gap-1.5 text-[#0C245C]"><span class="w-2.5 h-2.5 rounded bg-[#0C245C]"></span> Root Trigger</span>
+<span class="flex items-center gap-1.5 text-[#0C245C]"><span class="w-2.5 h-2.5 rounded bg-[#CCFF00] border border-[#0C245C]/30"></span> Direct Hop 1</span>
+<span class="flex items-center gap-1.5 text-[#0C245C]"><span class="w-2.5 h-2.5 rounded bg-red-100 border border-red-300"></span> Cascading Hop 2/3</span>
+</div>
+</div>
+<div class="w-full bg-[#F7F7F3] rounded border border-[#DDE1E7] p-3 overflow-x-auto">
+<svg class="w-full min-w-[760px] h-28" fill="none" viewbox="0 0 820 110" xmlns="http://www.w3.org/2000/svg">
+<!-- Connecting Paths -->
+<path d="M 120 55 L 260 25" stroke="#0C245C" stroke-dasharray="3 3" stroke-width="1.75"></path>
+<path d="M 120 55 L 260 55" stroke="#0C245C" stroke-width="1.75"></path>
+<path d="M 120 55 L 260 85" stroke="#0C245C" stroke-dasharray="3 3" stroke-width="1.75"></path>
+<path d="M 380 25 L 500 25" stroke="#DDE1E7" stroke-width="2"></path>
+<path d="M 620 25 L 720 25" stroke="#DDE1E7" stroke-dasharray="4 4" stroke-width="2"></path>
+<path d="M 380 55 L 500 85" stroke="#DDE1E7" stroke-dasharray="2 2" stroke-width="2"></path>
+<!-- Root Node: D-17 -->
+<g transform="translate(30, 35)">
+<rect fill="#0C245C" height="40" rx="4" stroke="#CCFF00" stroke-width="2" width="90"></rect>
+<text fill="#CCFF00" font-family="JetBrains Mono" font-size="11" font-weight="bold" text-anchor="middle" x="45" y="24">D-17 (ROOT)</text>
+</g>
+<!-- Hop 1 Nodes -->
+<g transform="translate(260, 5)">
+<rect fill="#F5FFCC" height="38" rx="4" stroke="#506600" stroke-width="1.5" width="120"></rect>
+<text fill="#0C245C" font-family="JetBrains Mono" font-size="10" font-weight="bold" text-anchor="middle" x="60" y="19">T-14: Quantize</text>
+<text fill="#506600" font-family="JetBrains Mono" font-size="8" font-weight="bold" text-anchor="middle" x="60" y="30">HOP 1 DIRECT</text>
+</g>
+<g transform="translate(260, 36)">
+<rect fill="#F5FFCC" height="38" rx="4" stroke="#506600" stroke-width="1.5" width="120"></rect>
+<text fill="#0C245C" font-family="JetBrains Mono" font-size="10" font-weight="bold" text-anchor="middle" x="60" y="19">T-15: Augment</text>
+<text fill="#506600" font-family="JetBrains Mono" font-size="8" font-weight="bold" text-anchor="middle" x="60" y="30">HOP 1 DIRECT</text>
+</g>
+<g transform="translate(260, 68)">
+<rect fill="#FFFFFF" height="38" rx="4" stroke="#DDE1E7" stroke-width="1.5" width="120"></rect>
+<text fill="#0C245C" font-family="JetBrains Mono" font-size="10" font-weight="semibold" text-anchor="middle" x="60" y="19">DOC-05: Arch v1</text>
+<text fill="#687282" font-family="JetBrains Mono" font-size="8" font-weight="medium" text-anchor="middle" x="60" y="30">STALE REFERENCE</text>
+</g>
+<!-- Hop 2 Nodes -->
+<g transform="translate(500, 5)">
+<rect fill="#FEF2F2" height="38" rx="4" stroke="#EF4444" stroke-width="1.5" width="120"></rect>
+<text fill="#991B1B" font-family="JetBrains Mono" font-size="10" font-weight="bold" text-anchor="middle" x="60" y="19">DL-02: Demo APK</text>
+<text fill="#DC2626" font-family="JetBrains Mono" font-size="8" font-weight="bold" text-anchor="middle" x="60" y="30">HOP 2 RISK</text>
+</g>
+<g transform="translate(500, 68)">
+<rect fill="#FEF2F2" height="38" rx="4" stroke="#EF4444" stroke-width="1" width="120"></rect>
+<text fill="#991B1B" font-family="JetBrains Mono" font-size="10" font-weight="bold" text-anchor="middle" x="60" y="19">DL-01: Benchmark</text>
+<text fill="#DC2626" font-family="JetBrains Mono" font-size="8" font-weight="bold" text-anchor="middle" x="60" y="30">INVALIDATED</text>
+</g>
+<!-- Hop 3 Milestone -->
+<g transform="translate(720, 5)">
+<rect fill="#FFF7ED" height="38" rx="4" stroke="#F97316" stroke-width="1.5" width="95"></rect>
+<text fill="#9A3412" font-family="JetBrains Mono" font-size="10" font-weight="bold" text-anchor="middle" x="47" y="19">MS-2 Capstone</text>
+<text fill="#EA580C" font-family="JetBrains Mono" font-size="8" font-weight="bold" text-anchor="middle" x="47" y="30">SCHEDULE</text>
+</g>
+</svg>
+</div>
+</div>
+<!-- Ranked Impact Cascade Table -->
+<div class="bg-white rounded border border-[#DDE1E7] shadow-sm overflow-hidden">
+<div class="p-4 bg-[#FBFBFA] border-b border-[#DDE1E7] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-center gap-3">
+<h2 class="text-sm font-bold text-[#0C245C]">Ranked Impact Cascade</h2>
+<span class="font-mono text-[10px] bg-[#0C245C] text-white px-2 py-0.5 rounded font-semibold">5 Elements in Blast Radius</span>
+</div>
+<div class="flex items-center gap-2 text-xs">
+<span class="text-[#687282] font-mono text-[11px]">Select:</span>
+<button class="px-2.5 py-1 bg-white border border-[#DDE1E7] text-[#0C245C] rounded hover:bg-[#F7F7F3] font-mono text-[11px] transition-colors">Hop 1 Direct</button>
+<button class="px-2.5 py-1 bg-white border border-[#DDE1E7] text-[#0C245C] rounded hover:bg-[#F7F7F3] font-mono text-[11px] transition-colors">Deliverables Only</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#F7F7F3] border-b border-[#DDE1E7] font-mono text-[10px] text-[#687282] uppercase tracking-wider">
+<th class="py-3 px-4 w-10 text-center">
+<input checked="" class="w-4 h-4 rounded text-[#0C245C] border-[#DDE1E7] focus:ring-0 cursor-pointer" id="selectAllCheckbox" style="accent-color: #0C245C;" type="checkbox"/>
+</th>
+<th class="py-3 px-4 font-bold">ID</th>
+<th class="py-3 px-4 font-bold">Item Title</th>
+<th class="py-3 px-4 font-bold">Hop Distance</th>
+<th class="py-3 px-4 font-bold">Relationship Class</th>
+<th class="py-3 px-4 font-bold">Path Explanation</th>
+<th class="py-3 px-4 font-bold">Suggested Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#DDE1E7] text-xs">
+<!-- Row 1: T-14 -->
+<tr class="hover:bg-[#FBFBFA] transition-colors">
+<td class="py-3 px-4 text-center">
+<input checked="" class="row-checkbox w-4 h-4 rounded text-[#0C245C] border-[#DDE1E7] cursor-pointer" style="accent-color: #0C245C;" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono font-bold text-[#0C245C]">T-14</td>
+<td class="py-3 px-4 font-semibold text-[#09152E]">Quantize Model for Android</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded font-mono text-[10px] bg-[#CCFF00] text-[#0C245C] font-bold border border-[#0C245C]/20">Hop 1</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#506600] font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#506600]"></span>
+                    Direct Task
+                  </span>
+</td>
+<td class="py-3 px-4 font-mono text-[11px] text-[#687282] whitespace-nowrap">
+<span class="text-[#0C245C] font-bold">D-17</span>
+<span class="text-[#8C95A6]"> ──resulted_in──&gt; </span>
+<span class="text-[#0C245C] font-bold">T-14</span>
+</td>
+<td class="py-3 px-4 text-[#09152E]">
+                  Re-evaluate quantization calibration matrix for Model C
+                </td>
+</tr>
+<!-- Row 2: T-15 -->
+<tr class="hover:bg-[#FBFBFA] transition-colors">
+<td class="py-3 px-4 text-center">
+<input checked="" class="row-checkbox w-4 h-4 rounded text-[#0C245C] border-[#DDE1E7] cursor-pointer" style="accent-color: #0C245C;" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono font-bold text-[#0C245C]">T-15</td>
+<td class="py-3 px-4 font-semibold text-[#09152E]">Augmentation Pipeline Configuration</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded font-mono text-[10px] bg-[#CCFF00] text-[#0C245C] font-bold border border-[#0C245C]/20">Hop 1</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#506600] font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#506600]"></span>
+                    Direct Task
+                  </span>
+</td>
+<td class="py-3 px-4 font-mono text-[11px] text-[#687282] whitespace-nowrap">
+<span class="text-[#0C245C] font-bold">D-17</span>
+<span class="text-[#8C95A6]"> ──resulted_in──&gt; </span>
+<span class="text-[#0C245C] font-bold">T-15</span>
+</td>
+<td class="py-3 px-4 text-[#09152E]">
+                  Tune brightness &amp; specular reflection filters in pipeline
+                </td>
+</tr>
+<!-- Row 3: DL-02 -->
+<tr class="hover:bg-[#FEF2F2]/60 transition-colors bg-red-50/20">
+<td class="py-3 px-4 text-center">
+<input checked="" class="row-checkbox w-4 h-4 rounded text-[#0C245C] border-[#DDE1E7] cursor-pointer" style="accent-color: #0C245C;" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono font-bold text-red-700">DL-02</td>
+<td class="py-3 px-4 font-semibold text-[#09152E]">Demo APK Deliverable</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded font-mono text-[10px] bg-red-100 text-red-800 font-bold border border-red-300">Hop 2</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 font-mono text-[11px] text-red-700 font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                    Deliverable Blocked
+                  </span>
+</td>
+<td class="py-3 px-4 font-mono text-[11px] text-[#687282] whitespace-nowrap">
+<span class="text-[#0C245C]">D-17</span>
+<span class="text-[#8C95A6]"> ──&gt; </span>
+<span class="text-[#0C245C]">T-14</span>
+<span class="text-[#8C95A6]"> ──contributes_to──&gt; </span>
+<span class="text-red-700 font-bold">DL-02</span>
+</td>
+<td class="py-3 px-4 text-red-800 font-medium">
+                  Hold release candidate build until Model C quantization passes
+                </td>
+</tr>
+<!-- Row 4: DL-01 -->
+<tr class="hover:bg-[#FEF2F2]/60 transition-colors bg-red-50/10">
+<td class="py-3 px-4 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-[#0C245C] border-[#DDE1E7] cursor-pointer" style="accent-color: #0C245C;" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono font-bold text-red-700">DL-01</td>
+<td class="py-3 px-4 font-semibold text-[#09152E]">Model B Benchmark Report</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded font-mono text-[10px] bg-red-100 text-red-800 font-bold border border-red-300">Hop 2</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 font-mono text-[11px] text-red-700 font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-red-600"></span>
+                    Invalidated Claim
+                  </span>
+</td>
+<td class="py-3 px-4 font-mono text-[11px] text-[#687282] whitespace-nowrap">
+<span class="text-[#0C245C]">D-17</span>
+<span class="text-[#8C95A6]"> ──evaluates──&gt; </span>
+<span class="text-red-700 font-bold">DL-01</span>
+</td>
+<td class="py-3 px-4 text-[#687282]">
+                  Mark benchmark stale; regenerate comparative latency metrics
+                </td>
+</tr>
+<!-- Row 5: DOC-05 -->
+<tr class="hover:bg-[#FBFBFA] transition-colors">
+<td class="py-3 px-4 text-center">
+<input class="row-checkbox w-4 h-4 rounded text-[#0C245C] border-[#DDE1E7] cursor-pointer" style="accent-color: #0C245C;" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono font-bold text-[#0C245C]">DOC-05</td>
+<td class="py-3 px-4 font-semibold text-[#09152E]">Architecture v1 Specification</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded font-mono text-[10px] bg-[#F1F3F6] text-[#687282] font-semibold border border-[#DDE1E7]">Hop 1</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#687282] font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-[#687282]"></span>
+                    Documentation
+                  </span>
+</td>
+<td class="py-3 px-4 font-mono text-[11px] text-[#687282] whitespace-nowrap">
+<span class="text-[#0C245C] font-bold">D-17</span>
+<span class="text-[#8C95A6]"> ──describes──&gt; </span>
+<span class="text-[#0C245C] font-bold">DOC-05</span>
+</td>
+<td class="py-3 px-4 text-[#687282]">
+                  Add supersession banner &amp; cross-link to Decision D-17 update
+                </td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Apply Invalidation Action Bar at bottom -->
+<div class="bg-white rounded border border-[#DDE1E7] p-5 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+<div class="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full md:w-auto">
+<!-- Flag Action Checkbox -->
+<label class="flex items-center gap-2.5 cursor-pointer select-none">
+<input checked="" class="w-4 h-4 rounded text-[#0C245C] border-[#DDE1E7] cursor-pointer" style="accent-color: #0C245C;" type="checkbox"/>
+<span class="text-xs font-bold text-[#0C245C]">Flag 3 selected tasks for re-evaluation in Notion</span>
+</label>
+<!-- Toggle -->
+<label class="flex items-center gap-2.5 cursor-pointer select-none">
+<div class="relative inline-flex items-center">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-[#DDE1E7] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#506600]"></div>
+</div>
+<span class="text-xs text-[#687282] font-medium">Auto-dispatch webhook to Slack #eng-telemetry</span>
+</label>
+</div>
+<!-- Buttons -->
+<div class="flex items-center gap-3 w-full md:w-auto justify-end">
+<button class="px-4 py-2 bg-white border border-[#DDE1E7] hover:bg-[#F7F7F3] text-[#0C245C] font-medium text-xs rounded transition-colors shadow-sm">
+            Cancel
+          </button>
+<!-- Primary CTA: bold #0C245C bg with #CCFF00 accent border and font styling -->
+<button class="flex items-center gap-2 px-5 py-2.5 bg-[#0C245C] hover:bg-[#07173b] text-white font-bold text-xs uppercase tracking-wide rounded border-2 border-[#CCFF00] shadow transition-all" id="applyChangesBtn">
+<span class="material-symbols-outlined text-[18px] text-[#CCFF00]">published_with_changes</span>
+<span>Apply Impact Changes to Graph &amp; Notion</span>
+</button>
+</div>
+</div>
+</main>
+</div>
+<!-- Toast Notification Feedback -->
+<div class="fixed bottom-6 right-6 hidden transform transition-all duration-300 translate-y-2 opacity-0 z-50" id="toastNotification">
+<div class="bg-[#0C245C] text-white border-2 border-[#CCFF00] px-4 py-3 rounded shadow-2xl flex items-center gap-3">
+<span class="material-symbols-outlined text-[#CCFF00] text-[22px]">check_circle</span>
+<div class="flex flex-col">
+<span class="font-sans text-xs font-bold text-white tracking-wide">Graph Propagation Synced</span>
+<span class="font-mono text-[10px] text-[#CCFF00]">3 Notion items flagged for re-evaluation • Root updated</span>
+</div>
+</div>
+</div>
+<script>
+    const selectAll = document.getElementById('selectAllCheckbox');
+    const rowCheckboxes = document.querySelectorAll('.row-checkbox');
+    const applyBtn = document.getElementById('applyChangesBtn');
+    const simulateBtn = document.getElementById('simulateBtn');
+    const toast = document.getElementById('toastNotification');
+
+    if (selectAll) {
+      selectAll.addEventListener('change', (e) => {
+        rowCheckboxes.forEach(cb => cb.checked = e.target.checked);
+      });
+    }
+
+    function showToast() {
+      if (toast) {
+        toast.classList.remove('hidden');
+        setTimeout(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        }, 10);
+        setTimeout(() => {
+          toast.classList.add('translate-y-2', 'opacity-0');
+          setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3500);
+      }
+    }
+
+    if (applyBtn) {
+      applyBtn.addEventListener('click', showToast);
+    }
+
+    if (simulateBtn) {
+      simulateBtn.addEventListener('click', () => {
+        simulateBtn.classList.add('opacity-80', 'scale-[0.99]');
+        setTimeout(() => {
+          simulateBtn.classList.remove('opacity-80', 'scale-[0.99]');
+          showToast();
+        }, 400);
+      });
+    }
+  </script>
+</body></html>
