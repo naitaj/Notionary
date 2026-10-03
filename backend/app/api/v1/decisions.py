@@ -1,11 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime, timezone
+
 from app.database import get_db
-from app.models.entities import Decision, Edge, Claim, Experiment, Task
+from app.models.entities import Decision, Edge
+from app.graph.traversal import traverse_graph
+from app.schemas.contracts import LineageResponse, GraphNode, GraphEdgeItem
+from app.core.auth import get_current_user, UserContext, UserScope
 
 router = APIRouter(prefix="/decisions", tags=["Decisions"])
 
@@ -32,20 +36,6 @@ class DecisionResponse(BaseModel):
 
     class Config:
         from_attributes = True
-
-class LineageNode(BaseModel):
-    id: str
-    type: str
-    title: str
-    relationship: str
-    details: Optional[str] = None
-    origin: Optional[str] = "verified_source"
-
-class LineageResponse(BaseModel):
-    decision: DecisionResponse
-    upstream_evidence: List[LineageNode]
-    downstream_work: List[LineageNode]
-    alternatives_considered: List[Any]
 
 @router.get("", response_model=List[DecisionResponse])
 async def list_decisions(project_id: Optional[str] = None, db: AsyncSession = Depends(get_db)):
@@ -80,83 +70,116 @@ async def get_decision(decision_id: str, db: AsyncSession = Depends(get_db)):
     return decision
 
 @router.get("/{decision_id}/lineage", response_model=LineageResponse)
-async def get_decision_lineage(decision_id: str, db: AsyncSession = Depends(get_db)):
-    # 1. Fetch decision
+async def get_decision_lineage(
+    decision_id: str, 
+    as_of: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    user: UserContext = Depends(get_current_user)
+):
     res = await db.execute(select(Decision).where(Decision.id == decision_id))
     decision = res.scalar_one_or_none()
     if not decision:
         raise HTTPException(status_code=404, detail="Decision not found")
 
-    # 2. Upstream evidence via edges (e.g. claim -> decision, experiment -> decision)
-    upstream_edges_res = await db.execute(
-        select(Edge).where(Edge.to_id == decision.id)
+    role = user.roles_by_project.get(decision.project_id, "member")
+    team_ids = user.teams_by_project.get(decision.project_id, [])
+    scope = UserScope(user_id=user.id, project_id=decision.project_id, role=role, team_ids=team_ids)
+
+    # 1. Upstream evidence
+    up_nodes, up_edges = await traverse_graph(
+        db=db,
+        project_id=decision.project_id,
+        start_id=decision.id,
+        direction="reverse",
+        edge_types=["supports", "references", "produced", "discusses", "discussed_in", "contributes_to"],
+        max_depth=2,
+        as_of=as_of,
+        scope=scope
     )
-    upstream_edges = upstream_edges_res.scalars().all()
+    upstream_evidence = []
+    for node in up_nodes:
+        if node.id != decision.id:
+            edge = next((e for e in up_edges if e.from_id == node.id and e.to_id == decision.id), None)
+            rel = edge.edge_type if edge else "unknown"
+            upstream_evidence.append({
+                "id": node.id,
+                "type": node.entity_type,
+                "title": f"[{node.code}] {node.title}" if node.code else node.title,
+                "relationship": rel,
+                "status": node.status
+            })
 
-    upstream_nodes: List[LineageNode] = []
-    for edge in upstream_edges:
-        if edge.from_type == "claim":
-            claim_res = await db.execute(select(Claim).where(Claim.id == edge.from_id))
-            c = claim_res.scalar_one_or_none()
-            if c:
-                upstream_nodes.append(LineageNode(
-                    id=c.id,
-                    type="claim",
-                    title=c.statement,
-                    relationship=edge.edge_type,
-                    details=f"Status: {c.status} · Excerpt: {c.source_excerpt or ''}",
-                    origin="verified_source"
-                ))
-        elif edge.from_type == "experiment":
-            exp_res = await db.execute(select(Experiment).where(Experiment.id == edge.from_id))
-            e = exp_res.scalar_one_or_none()
-            if e:
-                upstream_nodes.append(LineageNode(
-                    id=e.id,
-                    type="experiment",
-                    title=f"{e.code}: {e.hypothesis or e.model or 'Experiment'}",
-                    relationship=edge.edge_type,
-                    details=f"Model: {e.model} · Dataset: {e.dataset}",
-                    origin="verified_source"
-                ))
-
-    # 3. Downstream tasks & work via edges or foreign keys
-    downstream_edges_res = await db.execute(
-        select(Edge).where(Edge.from_id == decision.id)
+    # 2. Downstream consequences
+    down_nodes, down_edges = await traverse_graph(
+        db=db,
+        project_id=decision.project_id,
+        start_id=decision.id,
+        direction="forward",
+        edge_types=["resulted_in", "depends_on", "affects", "assigned_to"],
+        max_depth=2,
+        as_of=as_of,
+        scope=scope
     )
-    downstream_edges = downstream_edges_res.scalars().all()
+    downstream_work = []
+    for node in down_nodes:
+        if node.id != decision.id:
+            edge = next((e for e in down_edges if e.from_id == decision.id and e.to_id == node.id), None)
+            rel = edge.edge_type if edge else "unknown"
+            downstream_work.append({
+                "id": node.id,
+                "type": node.entity_type,
+                "title": f"[{node.code}] {node.title}" if node.code else node.title,
+                "relationship": rel,
+                "status": node.status
+            })
 
-    downstream_nodes: List[LineageNode] = []
-    for edge in downstream_edges:
-        if edge.to_type == "task":
-            task_res = await db.execute(select(Task).where(Task.id == edge.to_id))
-            t = task_res.scalar_one_or_none()
-            if t:
-                downstream_nodes.append(LineageNode(
-                    id=t.id,
-                    type="task",
-                    title=f"{t.code}: {t.title}",
-                    relationship=edge.edge_type,
-                    details=f"Status: {t.status} · Owner: {t.owner or 'Unassigned'}",
-                    origin="execution"
-                ))
+    # 3. Alternatives
+    alternatives = decision.alternatives or []
 
-    # Also include direct FK tasks if not in edges
-    direct_tasks_res = await db.execute(select(Task).where(Task.origin_decision_id == decision.id))
-    for t in direct_tasks_res.scalars().all():
-        if not any(n.id == t.id for n in downstream_nodes):
-            downstream_nodes.append(LineageNode(
-                id=t.id,
-                type="task",
-                title=f"{t.code}: {t.title}",
-                relationship="resulted_in",
-                details=f"Status: {t.status} · Owner: {t.owner or 'Unassigned'}",
-                origin="execution"
-            ))
+    # 4. Later evidence
+    later_evidence = []
+    if decision.decided_on:
+        stmt = select(Edge).where(
+            Edge.to_id == decision.id,
+            Edge.edge_type.in_(["contradicts", "validates", "invalidates", "supersedes"]),
+            Edge.effective_from > decision.decided_on
+        )
+        if as_of:
+            try:
+                as_of_dt = datetime.fromisoformat(as_of.replace('Z', '+00:00'))
+                stmt = stmt.where(Edge.effective_from <= as_of_dt)
+            except ValueError:
+                pass
+        result = await db.execute(stmt)
+        later_edges = result.scalars().all()
+        # Resolve nodes
+        for le in later_edges:
+            # Not fully resolving to title for brevity, or we can just return IDs
+            later_evidence.append({
+                "id": le.from_id,
+                "type": le.from_type,
+                "relationship": le.edge_type
+            })
+
+    # 5. Version chain
+    version_res = await db.execute(
+        select(Decision)
+        .where(Decision.code == decision.code, Decision.project_id == decision.project_id)
+        .order_by(Decision.version)
+    )
+    chain = version_res.scalars().all()
+    version_history = [{"id": c.id, "version": c.version, "status": c.status} for c in chain]
 
     return LineageResponse(
-        decision=DecisionResponse.model_validate(decision),
-        upstream_evidence=upstream_nodes,
-        downstream_work=downstream_nodes,
-        alternatives_considered=decision.alternatives or [],
+        decision_id=decision.id,
+        decision_code=decision.code,
+        statement=decision.statement,
+        status=decision.status,
+        version=decision.version,
+        upstream_evidence=upstream_evidence,
+        downstream_work=downstream_work,
+        alternatives_considered=alternatives,
+        later_evidence=later_evidence,
+        version_history=version_history,
+        as_of=as_of
     )

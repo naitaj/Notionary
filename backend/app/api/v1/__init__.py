@@ -14,6 +14,8 @@ from app.api.v1.audit import router as audit_router
 from app.api.v1.documents import router as documents_router
 from app.api.v1.search import router as search_router
 from app.api.v1.proposals import router as proposals_router
+from app.api.v1.edges import router as edges_router
+from app.api.v1.graph import router as graph_router
 
 router = APIRouter()
 
@@ -32,3 +34,5 @@ router.include_router(audit_router)
 router.include_router(documents_router)
 router.include_router(search_router)
 router.include_router(proposals_router, prefix="/proposals", tags=["proposals"])
+router.include_router(edges_router)
+router.include_router(graph_router)

@@ -130,6 +130,8 @@ export default function NotionaryDashboard() {
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [contradictions, setContradictions] = useState<ContradictionItem[]>([]);
   const [selectedDecision, setSelectedDecision] = useState<DecisionItem | null>(null);
+  const [decisionLineage, setDecisionLineage] = useState<any>(null);
+  const [isLoadingLineage, setIsLoadingLineage] = useState(false);
   const [impactData, setImpactData] = useState<ImpactResult | null>(null);
   const [isSimulatingImpact, setIsSimulatingImpact] = useState(false);
   const [queryInput, setQueryInput] = useState("");
@@ -537,6 +539,26 @@ export default function NotionaryDashboard() {
     }
   };
 
+  const fetchLineage = async (decisionId: string) => {
+    setIsLoadingLineage(true);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/decisions/${decisionId}/lineage`);
+      if (res.ok) {
+        const data = await res.json();
+        setDecisionLineage(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingLineage(false);
+    }
+  };
+
+  const handleSelectDecision = (d: DecisionItem) => {
+    setSelectedDecision(d);
+    fetchLineage(d.id);
+  };
+
   const loadData = async () => {
     try {
       const pRes = await fetch("http://localhost:8000/api/v1/projects");
@@ -550,7 +572,9 @@ export default function NotionaryDashboard() {
         const dRes = await fetch(`http://localhost:8000/api/v1/decisions?project_id=${pId}`);
         const decs = await dRes.json();
         setDecisions(decs);
-        if (decs.length > 0) setSelectedDecision(decs[0]);
+        if (decs.length > 0) {
+          handleSelectDecision(decs[0]);
+        }
 
         const tRes = await fetch(`http://localhost:8000/api/v1/tasks?project_id=${pId}`);
         setTasks(await tRes.json());
@@ -1173,7 +1197,23 @@ export default function NotionaryDashboard() {
                 </p>
               </div>
 
-              {selectedDecision && (
+              <div className="flex gap-4 mb-4 overflow-x-auto pb-2">
+                {decisions.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => handleSelectDecision(d)}
+                    className={`px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition ${
+                      selectedDecision?.id === d.id
+                        ? "bg-indigo-600 text-white"
+                        : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                    }`}
+                  >
+                    {d.code}
+                  </button>
+                ))}
+              </div>
+
+              {selectedDecision && decisionLineage && (
                 <div className="p-6 rounded-xl bg-slate-900/80 border border-slate-800 space-y-6">
                   <div className="flex items-center justify-between pb-4 border-b border-slate-800">
                     <div>
@@ -1181,7 +1221,7 @@ export default function NotionaryDashboard() {
                         <span className="text-sm px-2.5 py-1 rounded bg-indigo-600 text-white font-mono font-bold">
                           {selectedDecision.code}
                         </span>
-                        <span className="text-xs text-slate-400">Decided by: {selectedDecision.decided_by}</span>
+                        <span className="text-xs text-slate-400">Decided by: {selectedDecision.decided_by || "System"}</span>
                       </div>
                       <h3 className="text-lg font-semibold text-white mt-2">{selectedDecision.statement}</h3>
                     </div>
@@ -1196,57 +1236,76 @@ export default function NotionaryDashboard() {
                     </button>
                   </div>
 
-                  {/* Lineage Tree */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Upstream Evidence */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-                        <FlaskConical className="h-3.5 w-3.5 text-indigo-400" />
-                        Upstream Evidence
-                      </h4>
-                      <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
-                        <div className="text-xs font-mono text-indigo-400">EXP-06 (MobileNetV3)</div>
-                        <p className="text-xs text-slate-300">
-                          91.2% top-1 accuracy at 14.1 MB model size, strictly fitting the 20 MB edge memory budget.
-                        </p>
-                        <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
-                          ● Verified Source
-                        </span>
-                      </div>
+                  {isLoadingLineage ? (
+                    <div className="p-8 text-center text-slate-500 text-sm animate-pulse">
+                      Tracing graph relationships...
                     </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative">
+                      {/* Upstream Evidence */}
+                      <div className="space-y-3 z-10">
+                        <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                          <FlaskConical className="h-3.5 w-3.5 text-indigo-400" />
+                          Upstream Evidence
+                        </h4>
+                        {decisionLineage.upstream_evidence?.length > 0 ? (
+                          decisionLineage.upstream_evidence.map((node: any, idx: number) => (
+                            <div key={idx} className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-2 relative">
+                              <div className="text-xs font-mono text-indigo-400">{node.type.toUpperCase()}</div>
+                              <p className="text-xs text-slate-300">
+                                {node.title}
+                              </p>
+                              <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400">
+                                ● {node.relationship}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs text-slate-500 p-2">No upstream evidence recorded.</div>
+                        )}
+                      </div>
 
-                    {/* The Decision */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-                        <GitBranch className="h-3.5 w-3.5 text-emerald-400" />
-                        Governing Decision
-                      </h4>
-                      <div className="p-3.5 rounded-lg bg-indigo-950/40 border border-indigo-500/30 space-y-2">
-                        <div className="text-xs font-mono text-indigo-300 font-bold">D-17 (Active)</div>
-                        <p className="text-xs text-slate-200">
-                          Adopt MobileNetV3-Small for on-device inference in rural deployment.
-                        </p>
-                        <div className="text-[11px] text-slate-400 pt-1 border-t border-indigo-900/50">
-                          Alternatives: ResNet-50 (too large, 98MB), MobileNetV2
+                      {/* The Decision */}
+                      <div className="space-y-3 z-10">
+                        <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                          <GitBranch className="h-3.5 w-3.5 text-emerald-400" />
+                          Governing Decision
+                        </h4>
+                        <div className="p-3.5 rounded-lg bg-indigo-950/40 border border-indigo-500/30 space-y-2">
+                          <div className="text-xs font-mono text-indigo-300 font-bold">{selectedDecision.code} ({selectedDecision.status})</div>
+                          <p className="text-xs text-slate-200">
+                            {selectedDecision.statement}
+                          </p>
+                          {decisionLineage.alternatives_considered?.length > 0 && (
+                            <div className="text-[11px] text-slate-400 pt-1 border-t border-indigo-900/50">
+                              Alternatives: {decisionLineage.alternatives_considered.map((a: any) => typeof a === 'string' ? a : a.name).join(", ")}
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Downstream Work */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-                        <CheckSquare className="h-3.5 w-3.5 text-blue-400" />
-                        Downstream Work & Tasks
-                      </h4>
-                      <div className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-2">
-                        <div className="text-xs font-mono text-blue-400">T-14: INT8 Quantization</div>
-                        <p className="text-xs text-slate-300">Owner: Meera Sen • Target: Android Demo APK</p>
-                        <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400">
-                          In Progress
-                        </span>
+                      {/* Downstream Work */}
+                      <div className="space-y-3 z-10">
+                        <h4 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                          <CheckSquare className="h-3.5 w-3.5 text-blue-400" />
+                          Downstream Work & Tasks
+                        </h4>
+                        {decisionLineage.downstream_work?.length > 0 ? (
+                          decisionLineage.downstream_work.map((node: any, idx: number) => (
+                            <div key={idx} className="p-3.5 rounded-lg bg-slate-950 border border-slate-800 space-y-2 relative">
+                              <div className="text-xs font-mono text-blue-400">{node.type.toUpperCase()}</div>
+                              <p className="text-xs text-slate-300">{node.title}</p>
+                              <span className="inline-block text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 capitalize">
+                                {node.status?.replace("_", " ") || "Active"} • {node.relationship}
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-xs text-slate-500 p-2">No downstream items yet.</div>
+                        )}
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </div>
