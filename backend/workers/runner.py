@@ -222,3 +222,19 @@ async def handle_extraction(db: AsyncSession, job: Job):
     
     await emit_job_event(db, job.id, "completed", f"Extraction completed. Generated {len(proposals)} proposals.")
     return {"proposals_count": len(proposals)}
+
+
+from app.contradictions.scanner import run_contradiction_scan
+
+@register_handler("contradiction_scan")
+async def handle_contradiction_scan(db, job):
+    project_id = job.payload.get("project_id")
+    await emit_job_event(db, job.id, "starting", "Starting contradiction scan")
+    
+    await emit_job_event(db, job.id, "scanning_candidates", "Generating candidates...")
+    await emit_job_event(db, job.id, "checking_rules", "Checking rules and LLM...")
+    await emit_job_event(db, job.id, "checking_stale", "Checking for stale documents...")
+    
+    result = await run_contradiction_scan(db, project_id)
+    
+    await emit_job_event(db, job.id, "completed", f"Scan completed. Found {result['contradictions_found']} contradictions.", payload=result)

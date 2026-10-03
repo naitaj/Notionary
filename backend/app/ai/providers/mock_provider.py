@@ -70,6 +70,35 @@ class MockLLMProvider(LLMProvider):
                     }
                 ]
             })
+        if model_name == "LLMContradictionOutput":
+            # For phase 6 contradiction classifier mock
+            if "compatible contexts" in prompt.lower() or "different models" in prompt.lower():
+                return response_model.model_validate({
+                    "is_contradiction": False,
+                    "confidence": 0.9,
+                    "explanation": "Contexts differ.",
+                    "needs_context": False,
+                    "excerpt_a": "",
+                    "excerpt_b": ""
+                })
+            elif "needs_context=true" in prompt.lower():
+                 return response_model.model_validate({
+                    "is_contradiction": True,
+                    "confidence": 0.5,
+                    "explanation": "Needs more context.",
+                    "needs_context": True,
+                    "excerpt_a": "",
+                    "excerpt_b": ""
+                })
+            return response_model.model_validate({
+                "is_contradiction": True,
+                "confidence": 0.95,
+                "explanation": "Mocked contradiction detected.",
+                "needs_context": False,
+                "excerpt_a": prompt.split("Claim A:")[1].split("Claim B:")[0].strip()[:10] if "Claim A:" in prompt else "excerpt a",
+                "excerpt_b": prompt.split("Claim B:")[1].strip()[:10] if "Claim B:" in prompt else "excerpt b"
+            })
+            
         if model_name == "ExtractionResult":
             return response_model.model_validate({
                 "schema_version": "1.0.0",
