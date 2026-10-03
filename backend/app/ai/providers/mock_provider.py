@@ -18,13 +18,38 @@ class MockLLMProvider(LLMProvider):
         temperature: float = 0.0,
         **kwargs,
     ) -> str:
-        if "Why was Model B chosen" in prompt or "lineage" in prompt.lower():
+        p_lower = prompt.lower()
+        if "quantum" in p_lower or "marketing" in p_lower or "north america" in p_lower:
+            return "I couldn't find sufficient project evidence to answer this reliably."
+        
+        if "model b" in p_lower or "mobilenet" in p_lower or "d-17" in p_lower or "why" in p_lower:
             return (
-                "Model B (MobileNetV3-Small) was selected in decision D-17 because experiment EXP-06 "
-                "demonstrated 88.2% F1 score at 14.2ms latency, meeting the strict edge latency budget "
-                "defined in R-02 and outperforming Model A on battery constraints."
+                "MobileNetV3-Small was selected in decision D-17 because experiment EXP-06 "
+                "demonstrated 91.2% top-1 accuracy at 14.1 MB model size, strictly fitting the 20MB edge memory budget [1]. "
+                "However, field evaluations in EXP-09 showed a drop under direct sunlight glare [2]."
+                if "[2]" in prompt else
+                "MobileNetV3-Small was selected in decision D-17 because experiment EXP-06 "
+                "demonstrated 91.2% top-1 accuracy at 14.1 MB model size, strictly fitting the 20MB edge memory budget [1]."
             )
-        return "Notionary Project Intelligence: Automated reasoning completed successfully."
+        if "exp-06" in p_lower or "benchmark" in p_lower:
+            return "Experiment EXP-06 achieved 91.2% top-1 accuracy at 14.1 MB model size on the target device [1]."
+        if "t-14" in p_lower or "quantiz" in p_lower or "ananya" in p_lower:
+            return "Task T-14 is assigned to Ananya Patel to quantize MobileNetV3 to INT8 [1]."
+        if "t-15" in p_lower or "vikram" in p_lower:
+            return "Task T-15 is assigned to Vikram to integrate MobileNetV3 into the Android camera capture daemon [1]."
+        if "resnet-18" in p_lower or "latency recorded" in p_lower:
+            return "ResNet-18 clocked in at 31.8ms latency, violating our 20ms edge latency constraint [1]."
+        if "alternative" in p_lower:
+            return "Decision D-17 considered alternatives including ResNet-18 and MobileNetV2 [1]."
+        if "constraint" in p_lower or "envelope" in p_lower:
+            return "The edge deployment requires sub-20ms latency and 20MB storage envelope [1]."
+        if "exp-09" in p_lower or "sunlight" in p_lower or "discrepan" in p_lower:
+            return "Field trial EXP-09 showed accuracy degradation to 76.4% under harsh sunlight glare [1]."
+
+        if "[1]" in prompt:
+            return "Based on verified project records, the findings and decisions are documented in the evidence graph [1]."
+
+        return "I couldn't find sufficient project evidence to answer this reliably."
 
     async def complete_structured(
         self,

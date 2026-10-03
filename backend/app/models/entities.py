@@ -522,3 +522,31 @@ class Report(Base):
     sections = Column(JSON, default=dict)  # structured blocks tagged Source/Derived/AI
     notion_page_id = Column(String(255), nullable=True)
     created_at = Column(DateTime, default=utc_now)
+
+class EvalCase(Base):
+    __tablename__ = "eval_cases"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), nullable=False, index=True)
+    kind = Column(String(50), default="qa")  # qa, extraction, contradiction, impact
+    query = Column(Text, nullable=False)
+    expected_answer = Column(Text, nullable=True)
+    expected_sources = Column(JSON, default=list)  # list of entity codes e.g. ["D-17", "EXP-06"]
+    should_refuse = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=utc_now)
+
+class EvalRun(Base):
+    __tablename__ = "eval_runs"
+
+    id = Column(String(36), primary_key=True, default=generate_uuid)
+    project_id = Column(String(36), nullable=False, index=True)
+    eval_type = Column(String(50), default="qa")
+    git_sha = Column(String(50), nullable=True)
+    prompt_version = Column(String(50), nullable=True)
+    model = Column(String(100), nullable=True)
+    total_cases = Column(Integer, default=0)
+    passed_cases = Column(Integer, default=0)
+    hit_at_5 = Column(Float, default=0.0)
+    citation_correctness = Column(Float, default=0.0)
+    metrics = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=utc_now)

@@ -5,6 +5,7 @@ from app.main import app
 from app.database import engine, Base, AsyncSessionLocal
 from app.core.auth import UserScope
 from app.ai.providers.factory import get_llm_provider, get_embedding_provider
+from app.ai.providers.mock_provider import MockLLMProvider
 from app.schemas.contracts import ExtractionResult
 from workers.runner import enqueue_job, process_next_job
 from app.models.entities import Job, JobEvent
@@ -42,12 +43,12 @@ async def test_user_scopes_permissions():
 
 @pytest.mark.asyncio
 async def test_providers():
-    llm = get_llm_provider()
+    llm = MockLLMProvider()
     ans = await llm.complete("Why was Model B chosen?")
     assert len(ans) > 10
 
     # Structured contract test
-    extracted = await llm.complete_structured("Dummy prompt", ExtractionResult)
+    extracted = await llm.complete_structured("Decision D-17: Adopt MobileNetV3-Small for edge inference deployment.", ExtractionResult)
     assert extracted.schema_version == "1.0.0"
     assert len(extracted.decisions) > 0
 

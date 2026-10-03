@@ -1,110 +1,105 @@
-from fastapi import APIRouter, Depends
+from typing import List, Optional, Dict, Any
+from fastapi import APIRouter, Depends, Header
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
+
 from app.database import get_db
-from app.models.entities import Claim, Decision, Experiment, ExperimentResult
+from app.models.entities import EvalRun
+from app.schemas.contracts import RagQueryRequest, RagAnswer
+from app.core.auth import UserScope, get_current_user, UserContext
+from app.rag.engine import execute_rag_query
+from app.rag.eval import run_golden_qa_eval, seed_golden_eval_cases
 
 router = APIRouter(prefix="/ai", tags=["AI Reasoning & Cited Q&A"])
 
 class QueryRequest(BaseModel):
     project_id: str
     query: str
+    as_of: Optional[str] = None
 
-class Citation(BaseModel):
-    n: int
-    record: str
-    origin: str
-    notion_url: Optional[str] = None
-    excerpt: str
-    source_date: Optional[str] = None
-
-class RadarFlag(BaseModel):
-    type: str
+class EvalRunResponse(BaseModel):
     id: str
-    status: str
-    note: str
+    project_id: str
+    eval_type: str
+    git_sha: Optional[str] = None
+    prompt_version: Optional[str] = None
+    model: Optional[str] = None
+    total_cases: int
+    passed_cases: int
+    hit_at_5: float
+    citation_correctness: float
+    metrics: Dict[str, Any]
+    created_at: Any
 
-class ProvenanceInfo(BaseModel):
-    sources: int
-    graph_hops: int
-    ai_synthesized_sentences: int
+    class Config:
+        from_attributes = True
 
-class QueryResponse(BaseModel):
-    answer: str
-    citations: List[Citation]
-    flags: List[RadarFlag]
-    provenance: ProvenanceInfo
-
-@router.post("/query", response_model=QueryResponse)
-async def ask_assistant(data: QueryRequest, db: AsyncSession = Depends(get_db)):
-    q = data.query.lower()
-
-    # Smart retrieval over database for project
-    if "model" in q or "mobilenet" in q or "d-17" in q or "why" in q:
-        answer = (
-            "MobileNetV3 was chosen (Decision D-17) because experiment EXP-06 proved it achieves 91.2% "
-            "top-1 accuracy within a 14.1 MB envelope, strictly satisfying the offline 20 MB device budget, "
-            "whereas ResNet50 reached 93.0% but required 98 MB [1][2]. However, field evaluations in EXP-09 "
-            "revealed a 14.8% accuracy drop under direct sunlight glare [3]."
-        )
-        citations = [
-            Citation(
-                n=1,
-                record="EXP-06 Result R-21",
-                origin="verified_source",
-                notion_url="https://notion.so/EXP-06-result-r21",
-                excerpt="EXP-06: MobileNetV3 + data aug achieved 91.2% top-1 accuracy at 14.1 MB model size.",
-                source_date="2026-09-17",
-            ),
-            Citation(
-                n=2,
-                record="Decision D-17",
-                origin="human_approved",
-                notion_url="https://notion.so/Decision-D-17",
-                excerpt="Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.",
-                source_date="2026-09-18",
-            ),
-            Citation(
-                n=3,
-                record="EXP-09 Field Observations",
-                origin="verified_source",
-                notion_url="https://notion.so/EXP-09-field-test",
-                excerpt="EXP-09 field test: Severe degradation under harsh lighting to 76.4% top-1 accuracy.",
-                source_date="2026-09-24",
-            ),
-        ]
-        flags = [
-            RadarFlag(
-                type="contradiction",
-                id="C-03",
-                status="open",
-                note="EXP-09 field accuracy (76.4%) contradicts benchmark claim (91.2%).",
-            )
-        ]
-        return QueryResponse(
-            answer=answer,
-            citations=citations,
-            flags=flags,
-            provenance=ProvenanceInfo(sources=3, graph_hops=2, ai_synthesized_sentences=2),
-        )
-
-    # General fallback based on project claims
-    claims_res = await db.execute(select(Claim).where(Claim.project_id == data.project_id))
-    claims = claims_res.scalars().all()
-    first_claim = claims[0] if claims else None
-
-    return QueryResponse(
-        answer=f"Based on the project's evidence graph: {first_claim.statement if first_claim else 'No verified claims found yet.'}",
-        citations=[
-            Citation(
-                n=1,
-                record=first_claim.subject if first_claim else "Project Record",
-                origin="verified_source",
-                excerpt=first_claim.source_excerpt if first_claim else "Project overview",
-            )
-        ] if first_claim else [],
-        flags=[],
-        provenance=ProvenanceInfo(sources=1 if first_claim else 0, graph_hops=1, ai_synthesized_sentences=1),
+@router.post("/query", response_model=RagAnswer)
+async def ask_assistant(
+    data: QueryRequest,
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Plan §4.7: POST /ai/query.
+    Evidence-grounded, cited Q&A engine with strict permissions filtering and refusal guardrails.
+    """
+    user_role = user.roles_by_project.get(data.project_id) or user.roles_by_project.get("*", "member")
+    team_ids = user.teams_by_project.get(data.project_id) or user.teams_by_project.get("*", [])
+    
+    scope = UserScope(
+        user_id=user.id,
+        project_id=data.project_id,
+        role=user_role,
+        team_ids=team_ids,
     )
+
+    answer = await execute_rag_query(
+        db=db,
+        project_id=data.project_id,
+        query=data.query,
+        scope=scope,
+        as_of=data.as_of,
+    )
+    return answer
+
+@router.post("/eval/run", response_model=EvalRunResponse)
+async def run_evaluation(
+    project_id: str,
+    user: UserContext = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Plan §4.9: Run Golden Q&A evaluation benchmark (10 test cases) and record results.
+    """
+    user_role = user.roles_by_project.get(project_id) or user.roles_by_project.get("*", "owner")
+    team_ids = user.teams_by_project.get(project_id) or user.teams_by_project.get("*", ["team_ml", "team_edge"])
+    
+    scope = UserScope(
+        user_id=user.id,
+        project_id=project_id,
+        role=user_role,
+        team_ids=team_ids,
+    )
+
+    await seed_golden_eval_cases(db, project_id)
+    eval_run = await run_golden_qa_eval(db=db, project_id=project_id, scope=scope)
+    return eval_run
+
+@router.get("/eval/runs", response_model=List[EvalRunResponse])
+async def list_evaluation_runs(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Plan §4.9: Retrieve history of Golden Q&A evaluation runs.
+    """
+    stmt = (
+        select(EvalRun)
+        .where(EvalRun.project_id == project_id)
+        .order_by(EvalRun.created_at.desc())
+        .limit(10)
+    )
+    res = await db.execute(stmt)
+    return res.scalars().all()

@@ -1,7 +1,7 @@
 import re
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, computed_field
 
 SCHEMA_VERSION = "1.0.0"
 
@@ -191,6 +191,26 @@ class Citation(BaseModel):
     source_date: Optional[str] = None
     notion_url: Optional[str] = None
 
+    @computed_field
+    @property
+    def n(self) -> int:
+        return self.citation_number
+
+    @computed_field
+    @property
+    def record(self) -> str:
+        return self.code_or_title
+
+class GraphContextNode(BaseModel):
+    id: str
+    code: Optional[str] = None
+    title: str
+    entity_type: str
+    relationship: str
+    hop: int = 1
+    is_restricted: bool = False
+    origin: str = "human_authored"
+
 class RagQueryRequest(BaseModel):
     project_id: str
     query: str
@@ -203,6 +223,9 @@ class RagAnswer(BaseModel):
     citations: List[Citation] = Field(default_factory=list)
     provenance_bar: Dict[str, int] = Field(default_factory=lambda: {"human_authored": 0, "system_derived": 0, "ai_inferred": 0})
     open_contradictions_flagged: List[str] = Field(default_factory=list)
+    flags: List[Dict[str, Any]] = Field(default_factory=list)
+    provenance: Dict[str, Any] = Field(default_factory=dict)
+    graph_context: List[GraphContextNode] = Field(default_factory=list)
     refusal: bool = False
     refusal_reason: Optional[str] = None
 
