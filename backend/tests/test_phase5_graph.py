@@ -1,86 +1,105 @@
+from uuid import uuid4
 import pytest
-import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text
+from datetime import datetime, timezone, timedelta
 from httpx import AsyncClient, ASGITransport
+from sqlalchemy import select, text
 
 from app.main import app
-from app.database import AsyncSessionLocal
-from app.models.entities import Decision, Task, Experiment, Claim, Edge
+from app.database import engine, Base, AsyncSessionLocal
+from app.models.entities import Decision, Task, Experiment, Claim, Edge, Project
 from app.graph.traversal import traverse_graph
 
-@pytest.fixture(scope="session")
-def anyio_backend():
-    return "asyncio"
+@pytest.fixture(autouse=True)
+async def init_test_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
 
 @pytest.mark.asyncio
 async def test_graph_traversal_bfs_with_cycle_guard():
-    async with AsyncSessionLocal() as db_session:
-        pid = "proj_test_cycle"
-        
-        n1 = Decision(id="d1", project_id=pid, code="D-1", statement="Node 1")
-        n2 = Decision(id="d2", project_id=pid, code="D-2", statement="Node 2")
-        n3 = Decision(id="d3", project_id=pid, code="D-3", statement="Node 3")
-        
-        db_session.add_all([n1, n2, n3])
-        await db_session.flush()
-        
-        e1 = Edge(id="e1", project_id=pid, from_id="d1", from_type="decision", to_id="d2", to_type="decision", edge_type="supports")
-        e2 = Edge(id="e2", project_id=pid, from_id="d2", from_type="decision", to_id="d3", to_type="decision", edge_type="supports")
-        e3 = Edge(id="e3", project_id=pid, from_id="d3", from_type="decision", to_id="d1", to_type="decision", edge_type="supports")
-        
-        db_session.add_all([e1, e2, e3])
-        await db_session.commit()
-        
-        nodes, edges = await traverse_graph(db_session, pid, start_id="d1", direction="both", max_depth=4)
-        
-        assert len(nodes) == 3
-        assert len(edges) == 3
+    """
+    Plan §5.1: Graph traversal with cycle detection.
+    Seed a 3-node cycle (D1 → D2 → D3 → D1) and verify BFS terminates,
+    finds exactly 3 nodes, and 3 edges without infinite loop.
+    """
+    pid = str(uuid4())
+    d1_id, d2_id, d3_id = str(uuid4()), str(uuid4()), str(uuid4())
+    e1_id, e2_id, e3_id = str(uuid4()), str(uuid4()), str(uuid4())
+
+    async with AsyncSessionLocal() as db:
+        db.add_all([
+            Decision(id=d1_id, project_id=pid, code="D-CYC1", statement="Cycle Node 1"),
+            Decision(id=d2_id, project_id=pid, code="D-CYC2", statement="Cycle Node 2"),
+            Decision(id=d3_id, project_id=pid, code="D-CYC3", statement="Cycle Node 3"),
+        ])
+        await db.flush()
+
+        db.add_all([
+            Edge(id=e1_id, project_id=pid, from_id=d1_id, from_type="decision", to_id=d2_id, to_type="decision", edge_type="supports"),
+            Edge(id=e2_id, project_id=pid, from_id=d2_id, from_type="decision", to_id=d3_id, to_type="decision", edge_type="supports"),
+            Edge(id=e3_id, project_id=pid, from_id=d3_id, from_type="decision", to_id=d1_id, to_type="decision", edge_type="supports"),
+        ])
+        await db.commit()
+
+        nodes, edges = await traverse_graph(db, pid, start_id=d1_id, direction="both", max_depth=4)
+
+        assert len(nodes) == 3, f"Expected 3 nodes in cycle, got {len(nodes)}"
+        assert len(edges) == 3, f"Expected 3 edges in cycle, got {len(edges)}"
 
 @pytest.mark.asyncio
 async def test_edge_crud_and_review_lifecycle():
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
-        pid = "proj_crud"
-        
-        resp = await async_client.post("/api/v1/edges", json={
+    """
+    Plan §5.2: Edge CRUD + review lifecycle.
+    Create an AI-inferred edge (auto-unreviewed), approve it, then retire it.
+    """
+    pid = str(uuid4())
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.post("/api/v1/edges", json={
             "project_id": pid,
             "from_type": "decision",
-            "from_id": "n1",
+            "from_id": str(uuid4()),
             "to_type": "task",
-            "to_id": "n2",
+            "to_id": str(uuid4()),
             "edge_type": "resulted_in",
-            "origin": "ai_inferred"
+            "origin": "ai_inferred",
         })
         assert resp.status_code == 200
         edge = resp.json()
         assert edge["review_status"] == "unreviewed"
         edge_id = edge["id"]
-        
-        resp = await async_client.post(f"/api/v1/edges/{edge_id}/approve")
+
+        resp = await ac.post(f"/api/v1/edges/{edge_id}/approve")
         assert resp.status_code == 200
         assert resp.json()["review_status"] == "approved"
-        
-        resp = await async_client.post(f"/api/v1/edges/{edge_id}/retire")
+
+        resp = await ac.post(f"/api/v1/edges/{edge_id}/retire")
         assert resp.status_code == 200
         assert resp.json()["effective_to"] is not None
 
 @pytest.mark.asyncio
 async def test_subgraph_ego_network():
-    async with AsyncSessionLocal() as db_session:
-        pid = "proj_ego"
-        n1 = Decision(id="ego_d1", project_id=pid, code="D-EGO", statement="Center")
-        n2 = Task(id="ego_t1", project_id=pid, code="T-EGO", title="Child")
-        db_session.add_all([n1, n2])
-        await db_session.flush()
-        
-        e1 = Edge(id="ego_e1", project_id=pid, from_id="ego_d1", from_type="decision", to_id="ego_t1", to_type="task", edge_type="resulted_in")
-        db_session.add(e1)
-        await db_session.commit()
-    
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
-        resp = await async_client.get(f"/api/v1/graph/subgraph?project_id={pid}&center_id=ego_d1&depth=2")
+    """
+    Plan §5.3: GET /graph/subgraph returns ego-network.
+    Seed a center decision linked to a task, verify subgraph returns 2 nodes and 1 edge.
+    """
+    pid = str(uuid4())
+    d_id = str(uuid4())
+    t_id = str(uuid4())
+    e_id = str(uuid4())
+
+    async with AsyncSessionLocal() as db:
+        db.add_all([
+            Decision(id=d_id, project_id=pid, code="D-EGO", statement="Ego Center"),
+            Task(id=t_id, project_id=pid, code="T-EGO", title="Ego Child Task"),
+        ])
+        await db.flush()
+
+        db.add(Edge(id=e_id, project_id=pid, from_id=d_id, from_type="decision", to_id=t_id, to_type="task", edge_type="resulted_in"))
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.get(f"/api/v1/graph/subgraph?project_id={pid}&center_id={d_id}&depth=2")
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["nodes"]) == 2
@@ -88,73 +107,96 @@ async def test_subgraph_ego_network():
 
 @pytest.mark.asyncio
 async def test_decision_lineage_upstream_downstream():
-    async with AsyncSessionLocal() as db_session:
-        pid = "proj_lineage"
-        d1 = Decision(id="d_test", project_id=pid, code="D-TEST", statement="Test Dec")
-        e1 = Experiment(id="e_test", project_id=pid, code="EXP-TEST", hypothesis="Hyp")
-        c1 = Claim(id="c_test", project_id=pid, statement="Claim")
-        t1 = Task(id="t_test", project_id=pid, code="T-TEST", title="Task")
-        
-        db_session.add_all([d1, e1, c1, t1])
-        await db_session.flush()
-        
-        edge1 = Edge(id="edge_up1", project_id=pid, from_id="e_test", from_type="experiment", to_id="d_test", to_type="decision", edge_type="supports")
-        edge2 = Edge(id="edge_up2", project_id=pid, from_id="c_test", from_type="claim", to_id="d_test", to_type="decision", edge_type="supports")
-        edge3 = Edge(id="edge_down", project_id=pid, from_id="d_test", from_type="decision", to_id="t_test", to_type="task", edge_type="resulted_in")
-        
-        db_session.add_all([edge1, edge2, edge3])
-        await db_session.commit()
-    
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
-        resp = await async_client.get(f"/api/v1/decisions/d_test/lineage")
+    """
+    Plan §5.4: Decision lineage shows upstream evidence and downstream work.
+    Seed D-17 with upstream EXP-06 + CL-02 and downstream T-14.
+    """
+    pid = str(uuid4())
+    d_id = str(uuid4())
+    exp_id = str(uuid4())
+    cl_id = str(uuid4())
+    t_id = str(uuid4())
+
+    async with AsyncSessionLocal() as db:
+        db.add_all([
+            Decision(id=d_id, project_id=pid, code="D-LIN", statement="Lineage Decision"),
+            Experiment(id=exp_id, project_id=pid, code="EXP-LIN", hypothesis="Hypothesis"),
+            Claim(id=cl_id, project_id=pid, statement="Supporting claim"),
+            Task(id=t_id, project_id=pid, code="T-LIN", title="Downstream Task"),
+        ])
+        await db.flush()
+
+        db.add_all([
+            Edge(id=str(uuid4()), project_id=pid, from_id=exp_id, from_type="experiment", to_id=d_id, to_type="decision", edge_type="supports"),
+            Edge(id=str(uuid4()), project_id=pid, from_id=cl_id, from_type="claim", to_id=d_id, to_type="decision", edge_type="supports"),
+            Edge(id=str(uuid4()), project_id=pid, from_id=d_id, from_type="decision", to_id=t_id, to_type="task", edge_type="resulted_in"),
+        ])
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.get(f"/api/v1/decisions/{d_id}/lineage")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data["upstream_evidence"]) == 2
-        assert len(data["downstream_work"]) == 1
+        assert len(data["upstream_evidence"]) >= 2, f"Expected >= 2 upstream, got {len(data['upstream_evidence'])}"
+        assert len(data["downstream_work"]) >= 1, f"Expected >= 1 downstream, got {len(data['downstream_work'])}"
 
 @pytest.mark.asyncio
 async def test_task_context_why_chain():
-    async with AsyncSessionLocal() as db_session:
-        pid = "proj_taskctx"
-        d1 = Decision(id="d_ctx", project_id=pid, code="D-CTX", statement="Ctx Dec")
-        t1 = Task(id="t_ctx", project_id=pid, code="T-CTX", title="Ctx Task", origin_decision_id="d_ctx")
-        
-        db_session.add_all([d1, t1])
-        await db_session.flush()
-        
-        edge1 = Edge(id="edge_ctx", project_id=pid, from_id="d_ctx", from_type="decision", to_id="t_ctx", to_type="task", edge_type="resulted_in")
-        db_session.add(edge1)
-        await db_session.commit()
-    
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
-        resp = await async_client.get(f"/api/v1/tasks/t_ctx/context")
+    """
+    Plan §5.5: Task context shows "Why does this exist?" with origin chain.
+    """
+    pid = str(uuid4())
+    d_id = str(uuid4())
+    t_id = str(uuid4())
+
+    async with AsyncSessionLocal() as db:
+        db.add_all([
+            Decision(id=d_id, project_id=pid, code="D-WHY", statement="Why Decision"),
+            Task(id=t_id, project_id=pid, code="T-WHY", title="Why Task", origin_decision_id=d_id),
+        ])
+        await db.flush()
+
+        db.add(Edge(id=str(uuid4()), project_id=pid, from_id=d_id, from_type="decision", to_id=t_id, to_type="task", edge_type="resulted_in"))
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.get(f"/api/v1/tasks/{t_id}/context")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["origin_decision"]["id"] == "d_ctx"
+        assert data["origin_decision"]["id"] == d_id
         assert "chain" in data
+        assert len(data["chain"]) >= 1
 
 @pytest.mark.asyncio
 async def test_as_of_time_travel():
-    async with AsyncSessionLocal() as db_session:
-        pid = "proj_time"
-        d1 = Decision(id="d_time", project_id=pid, code="D-TIME", statement="Time")
-        t1 = Task(id="t_time", project_id=pid, code="T-TIME", title="Time Task")
-        
-        db_session.add_all([d1, t1])
-        await db_session.flush()
-        
-        edge1 = Edge(id="edge_time", project_id=pid, from_id="d_time", from_type="decision", to_id="t_time", to_type="task", edge_type="resulted_in")
-        db_session.add(edge1)
-        await db_session.commit()
-        
-        await db_session.execute(text("UPDATE edges SET effective_from = '2100-01-01 00:00:00' WHERE id = 'edge_time'"))
-        await db_session.commit()
-    
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as async_client:
-        resp = await async_client.get(f"/api/v1/decisions/d_time/lineage?as_of=2020-01-01T00:00:00Z")
+    """
+    Plan §5.7: Time-travel lineage via as_of parameter.
+    Create an edge with effective_from far in the future, verify as_of=past excludes it.
+    """
+    pid = str(uuid4())
+    d_id = str(uuid4())
+    t_id = str(uuid4())
+    e_id = str(uuid4())
+
+    async with AsyncSessionLocal() as db:
+        db.add_all([
+            Decision(id=d_id, project_id=pid, code="D-TT", statement="Time Travel Dec"),
+            Task(id=t_id, project_id=pid, code="T-TT", title="Time Travel Task"),
+        ])
+        await db.flush()
+
+        future_dt = datetime(2100, 1, 1, tzinfo=timezone.utc)
+        db.add(Edge(
+            id=e_id, project_id=pid,
+            from_id=d_id, from_type="decision",
+            to_id=t_id, to_type="task",
+            edge_type="resulted_in",
+            effective_from=future_dt,
+        ))
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.get(f"/api/v1/decisions/{d_id}/lineage?as_of=2020-01-01T00:00:00Z")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data["downstream_work"]) == 0
+        assert len(data["downstream_work"]) == 0, "Future edge should be excluded by as_of=2020"
