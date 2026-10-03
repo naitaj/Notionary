@@ -25,7 +25,7 @@ async def emit_job_event(db: AsyncSession, job_id: str, stage: str, message: str
         stage=stage,
         message=message,
         payload=payload or {},
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.add(event)
     await db.commit()
@@ -46,7 +46,7 @@ async def enqueue_job(
         status="queued",
         attempts=0,
         idempotency_key=idempotency_key,
-        run_after=run_after or datetime.now(timezone.utc),
+        run_after=run_after or datetime.now(timezone.utc).replace(tzinfo=None),
         progress={"percent": 0, "stage": "queued"},
     )
     db.add(job)
@@ -143,7 +143,7 @@ async def process_next_job(worker_id: str = "worker-1", job_id: Optional[str] = 
         return await _execute_job_in_session(session, worker_id, job_id)
 
 async def _execute_job_in_session(session: AsyncSession, worker_id: str, job_id: Optional[str]) -> bool:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     stmt = select(Job).where(Job.status == "queued", Job.run_after <= now)
     if job_id:
         stmt = stmt.where(Job.id == job_id)
@@ -188,7 +188,7 @@ async def _execute_job_in_session(session: AsyncSession, worker_id: str, job_id:
             jitter = random.uniform(1.0, 3.0)
             backoff_seconds = (2 ** job.attempts) * 2 + jitter
             job.status = "queued"
-            job.run_after = datetime.now(timezone.utc) + timedelta(seconds=backoff_seconds)
+            job.run_after = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=backoff_seconds)
             job.progress = {"percent": 0, "stage": f"retrying (attempt {job.attempts}/3)"}
         else:
             job.status = "failed"

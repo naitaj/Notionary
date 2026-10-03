@@ -11,13 +11,21 @@ from app.notion.hashing import compute_human_hash
 from app.core.logging import logger
 
 MODEL_MAP = {
+    "decision": Decision,
     "decisions": Decision,
+    "task": Task,
     "tasks": Task,
+    "experiment": Experiment,
     "experiments": Experiment,
+    "claim": Claim,
     "claims": Claim,
+    "deliverable": Deliverable,
     "deliverables": Deliverable,
+    "milestone": Milestone,
     "milestones": Milestone,
+    "report": Report,
     "reports": Report,
+    "reference": Reference,
     "references": Reference,
 }
 
@@ -40,11 +48,12 @@ async def push_entity_to_notion(
     if not entity:
         raise ValueError(f"Entity not found: {entity_type}/{entity_id}")
 
-    # 2. Fetch target Notion database
+    # 2. Fetch target Notion database (match both singular and plural)
+    possible_types = [entity_type.lower(), f"{entity_type.lower()}s", entity_type.lower().rstrip("s")]
     db_res = await db.execute(
         select(NotionDatabase).where(
             NotionDatabase.project_id == project_id,
-            NotionDatabase.entity_type == entity_type.lower(),
+            NotionDatabase.entity_type.in_(possible_types),
         )
     )
     notion_db = db_res.scalars().first()

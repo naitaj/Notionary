@@ -42,11 +42,19 @@ async def ingest_document(
             await emit_job_event(db, job_id, "parsing", f"Parsing document: {document.title}")
 
         file_path = document.file_uri
-        if not file_path or not os.path.exists(file_path):
+        if file_path and os.path.exists(file_path):
+            full_text, blocks, metadata = parse_file(file_path)
+            document.content_text = full_text
+        elif document.content_text:
+            full_text = document.content_text
+            try:
+                from app.ingestion.parsers.markdown import parse_markdown_text
+                blocks, metadata = parse_markdown_text(full_text)
+            except Exception:
+                blocks = []
+                metadata = {}
+        else:
             raise FileNotFoundError(f"Source file not found at: {file_path}")
-
-        full_text, blocks, metadata = parse_file(file_path)
-        document.content_text = full_text
 
         # Step 2: Classifying
         document.pipeline_status = "classifying"
@@ -111,7 +119,7 @@ async def ingest_document(
                 document_id=document.id,
             )
 
-        # Step 6: Completion
+        # Step 6: Completion & Extraction Queue
         if (document.doc_type == "meeting_note" or auto_extract) and document.doc_type != "benchmark_csv":
             from workers.runner import enqueue_job
             await enqueue_job(
@@ -123,6 +131,7 @@ async def ingest_document(
             document.pipeline_status = "chunked"
         else:
             document.pipeline_status = "completed"
+
             
         await db.commit()
         

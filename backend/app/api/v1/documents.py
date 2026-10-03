@@ -52,7 +52,7 @@ async def upload_document(
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
     doc_type: Optional[str] = Form(None),
-    auto_extract: bool = Form(False),
+    auto_extract: bool = Form(True),
     db: AsyncSession = Depends(get_db),
 ):
     """

@@ -1,7 +1,7 @@
 import re
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator, computed_field
+from pydantic import BaseModel, Field, field_validator, model_validator, computed_field
 
 SCHEMA_VERSION = "1.0.0"
 
@@ -19,6 +19,16 @@ class ExtractedClaim(BaseModel):
     excerpt: str = Field(default="", description="Exact verbatim excerpt from source document")
     char_start: Optional[int] = None
     char_end: Optional[int] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def pre_normalize(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            stmt = data.get("statement") or data.get("claim") or data.get("text") or data.get("description") or ""
+            data["statement"] = str(stmt)
+            if not data.get("excerpt"):
+                data["excerpt"] = data["statement"]
+        return data
 
     @field_validator("value", mode="before")
     @classmethod
@@ -43,6 +53,18 @@ class ExtractedTask(BaseModel):
     origin_decision_code: Optional[str] = None
     excerpt: str = ""
 
+    @model_validator(mode="before")
+    @classmethod
+    def pre_normalize(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            code = data.get("code") or data.get("id") or data.get("task_id")
+            title = data.get("title") or data.get("name") or data.get("task") or data.get("description") or "Untitled Task"
+            data["code"] = str(code) if code else None
+            data["title"] = str(title)
+            if not data.get("excerpt"):
+                data["excerpt"] = data["title"]
+        return data
+
     @field_validator("priority", mode="before")
     @classmethod
     def normalize_priority(cls, v):
@@ -62,6 +84,18 @@ class ExtractedExperiment(BaseModel):
     metric_value: Optional[float] = None
     metric_unit: Optional[str] = None
     excerpt: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def pre_normalize(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            code = data.get("code") or data.get("id") or data.get("exp_id") or "EXP-01"
+            hypothesis = data.get("hypothesis") or data.get("name") or data.get("description") or data.get("title")
+            data["code"] = str(code)
+            data["hypothesis"] = str(hypothesis) if hypothesis else None
+            if not data.get("excerpt"):
+                data["excerpt"] = str(hypothesis or data.get("model") or code)
+        return data
 
     @field_validator("parameters", mode="before")
     @classmethod
@@ -95,6 +129,18 @@ class ExtractedDecision(BaseModel):
     decided_date_str: Optional[str] = None
     supersedes_code: Optional[str] = None
     excerpt: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def pre_normalize(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            code = data.get("code") or data.get("id") or data.get("decision_id") or "D-01"
+            statement = data.get("statement") or data.get("description") or data.get("decision") or data.get("title") or ""
+            data["code"] = str(code)
+            data["statement"] = str(statement)
+            if not data.get("excerpt"):
+                data["excerpt"] = data["statement"]
+        return data
 
     @field_validator("alternatives", mode="before")
     @classmethod
@@ -178,6 +224,22 @@ class LineageResponse(BaseModel):
     later_evidence: List[Dict[str, Any]] = Field(default_factory=list)
     version_history: List[Dict[str, Any]] = Field(default_factory=list)
     as_of: Optional[str] = None
+
+    @field_validator("alternatives_considered", mode="before")
+    @classmethod
+    def normalize_alternatives(cls, v):
+        if isinstance(v, str):
+            return [{"name": v, "reason": ""}]
+        if isinstance(v, list):
+            res = []
+            for item in v:
+                if isinstance(item, str):
+                    res.append({"name": item, "reason": ""})
+                elif isinstance(item, dict):
+                    res.append(item)
+            return res
+        return []
+
 
 # ----------------- Cited RAG & Q&A -----------------
 

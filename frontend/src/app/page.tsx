@@ -34,10 +34,18 @@ import {
   PieChart,
   ShieldAlert,
   Folder,
+  Plus,
   BookOpen,
   Lock,
   Trash2,
 } from "lucide-react";
+
+interface ProjectItem {
+  id: string;
+  name: string;
+  description?: string;
+  notion_parent_id?: string;
+}
 
 interface DocumentItem {
   id: string;
@@ -259,6 +267,12 @@ export default function NotionaryDashboard() {
   const [evalResult, setEvalResult] = useState<any | null>(null);
   const [syncStatus, setSyncStatus] = useState<string>("Synced 2m ago (polling 30s)");
   const [currentProjectId, setCurrentProjectId] = useState<string>("demo");
+  const [projectsList, setProjectsList] = useState<ProjectItem[]>([]);
+  const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState<boolean>(false);
+  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState<boolean>(false);
+  const [newProjectName, setNewProjectName] = useState<string>("");
+  const [newProjectDesc, setNewProjectDesc] = useState<string>("");
+  const [isCreatingProject, setIsCreatingProject] = useState<boolean>(false);
 
   // Knowledge & Document Ingestion state
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
@@ -770,38 +784,84 @@ export default function NotionaryDashboard() {
     }
   };
 
-  const loadData = async () => {
+  const loadData = async (targetProjectId?: string) => {
     try {
       const pRes = await fetch("http://localhost:8000/api/v1/projects");
-      const projects = await pRes.json();
-      if (projects && projects.length > 0) {
-        const activeProj = projects.find((p: any) => p.name.includes("LeafGuard")) || projects[0];
-        const pId = activeProj.id;
-        setCurrentProjectId(pId);
-        const hRes = await fetch(`http://localhost:8000/api/v1/projects/${pId}/health`);
-        setHealth(await hRes.json());
+      if (pRes.ok) {
+        const projects: ProjectItem[] = await pRes.json();
+        setProjectsList(projects);
+        if (projects && projects.length > 0) {
+          const activeProj = targetProjectId
+            ? projects.find((p) => p.id === targetProjectId) || projects[0]
+            : projects.find((p) => p.id === currentProjectId) || projects.find((p) => p.name.includes("LeafGuard")) || projects[0];
+          const pId = activeProj.id;
+          setCurrentProjectId(pId);
+          const hRes = await fetch(`http://localhost:8000/api/v1/projects/${pId}/health`);
+          if (hRes.ok) setHealth(await hRes.json());
 
-        const dRes = await fetch(`http://localhost:8000/api/v1/decisions?project_id=${pId}`);
-        const decs = await dRes.json();
-        setDecisions(decs);
-        if (decs.length > 0) {
-          handleSelectDecision(decs[0]);
+          const dRes = await fetch(`http://localhost:8000/api/v1/decisions?project_id=${pId}`);
+          if (dRes.ok) {
+            const decs = await dRes.json();
+            setDecisions(decs);
+            if (decs.length > 0) {
+              handleSelectDecision(decs[0]);
+            } else {
+              setSelectedDecision(null);
+              setDecisionLineage(null);
+            }
+          }
+
+          const tRes = await fetch(`http://localhost:8000/api/v1/tasks?project_id=${pId}`);
+          if (tRes.ok) setTasks(await tRes.json());
+
+          const cRes = await fetch(`http://localhost:8000/api/v1/contradictions?project_id=${pId}`);
+          if (cRes.ok) setContradictions(await cRes.json());
+
+          loadDocuments(pId);
+          loadProposals(pId);
+          loadCoverage(pId);
+          loadBlockedTasks(pId);
+          loadReports(pId);
         }
-
-        const tRes = await fetch(`http://localhost:8000/api/v1/tasks?project_id=${pId}`);
-        setTasks(await tRes.json());
-
-        const cRes = await fetch(`http://localhost:8000/api/v1/contradictions?project_id=${pId}`);
-        setContradictions(await cRes.json());
-
-        loadDocuments(pId);
-        loadProposals(pId);
-        loadCoverage(pId);
-        loadBlockedTasks(pId);
-        loadReports(pId);
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleSwitchProject = async (pId: string) => {
+    setIsProjectDropdownOpen(false);
+    await loadData(pId);
+  };
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProjectName.trim()) return;
+    setIsCreatingProject(true);
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newProjectName.trim(),
+          description: newProjectDesc.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        const created = await res.json();
+        setNewProjectName("");
+        setNewProjectDesc("");
+        setIsNewProjectModalOpen(false);
+        setIsProjectDropdownOpen(false);
+        await loadData(created.id);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(`Failed to create project: ${err.detail || "Server error"}`);
+      }
+    } catch (err: any) {
+      alert(`Error creating project: ${err.message}`);
+    } finally {
+      setIsCreatingProject(false);
     }
   };
 
@@ -1164,8 +1224,8 @@ export default function NotionaryDashboard() {
           <div className="flex items-center gap-3">
             <span className="font-mono text-xs text-[#0C245C] font-semibold tracking-tight">PROJECT REASONING LAYER</span>
             <span className="text-[#94A3B8] text-xs">/</span>
-            <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-[#0C245C] font-medium">
-              KBC-NOTION-02
+            <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-[#0C245C] font-medium uppercase">
+              {currentProjectId}
             </span>
           </div>
 
@@ -1175,9 +1235,88 @@ export default function NotionaryDashboard() {
                 {resetSuccessMessage}
               </span>
             )}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-[#DDE1E7] bg-[#F7F7F3] text-[#0C245C] text-xs font-medium cursor-pointer hover:border-slate-300 transition-colors">
-              <Folder className="h-3.5 w-3.5 text-[#64748B]" />
-              <span>LeafGuard · On-Device Model</span>
+            {/* Project Switcher Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded border border-[#DDE1E7] bg-[#F7F7F3] text-[#0C245C] text-xs font-medium cursor-pointer hover:border-slate-300 hover:bg-slate-100/70 transition-colors"
+                title="Switch active project"
+              >
+                <Folder className="h-3.5 w-3.5 text-[#0C245C]" />
+                <span className="max-w-[200px] truncate font-semibold">
+                  {projectsList.find((p) => p.id === currentProjectId)?.name || "Select Project"}
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 text-[#64748B] transition-transform duration-150 ${isProjectDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {isProjectDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-30"
+                    onClick={() => setIsProjectDropdownOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-1.5 w-72 rounded-xl bg-white border border-[#DDE1E7] shadow-xl z-40 py-1.5 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    <div className="px-3 py-2 border-b border-[#DDE1E7] flex items-center justify-between bg-slate-50/50">
+                      <span className="font-mono text-[10px] uppercase font-bold text-[#64748B] tracking-wider">
+                        Active Projects
+                      </span>
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white border border-[#DDE1E7] text-[#0C245C] font-semibold">
+                        {projectsList.length}
+                      </span>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto py-1 divide-y divide-slate-100">
+                      {projectsList.length === 0 ? (
+                        <div className="p-4 text-center text-xs text-slate-500">No projects found</div>
+                      ) : (
+                        projectsList.map((proj) => {
+                          const isActive = proj.id === currentProjectId;
+                          return (
+                            <button
+                              key={proj.id}
+                              type="button"
+                              onClick={() => handleSwitchProject(proj.id)}
+                              className={`w-full px-3 py-2.5 text-left flex items-start justify-between gap-2 transition-colors text-xs ${
+                                isActive ? "bg-[#CCFF00]/20 text-[#0C245C] font-semibold" : "hover:bg-slate-50 text-slate-700"
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5">
+                                  <Folder className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-[#0C245C]" : "text-[#64748B]"}`} />
+                                  <span className="truncate">{proj.name}</span>
+                                </div>
+                                {proj.description && (
+                                  <p className="text-[11px] text-slate-500 truncate mt-0.5 pl-5">
+                                    {proj.description}
+                                  </p>
+                                )}
+                              </div>
+                              {isActive && (
+                                <Check className="h-4 w-4 text-[#0C245C] shrink-0 mt-0.5" />
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    <div className="border-t border-[#DDE1E7] p-2 bg-[#F7F7F3]">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProjectDropdownOpen(false);
+                          setIsNewProjectModalOpen(true);
+                        }}
+                        className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#0C245C] bg-white border border-[#DDE1E7] rounded-lg hover:bg-slate-50 transition-colors shadow-2xs cursor-pointer"
+                      >
+                        <Plus className="h-3.5 w-3.5 text-[#0C245C]" />
+                        <span>Create New Project</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#CCFF00] border border-[#b8e600]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#0C245C]"></span>
@@ -3508,6 +3647,81 @@ export default function NotionaryDashboard() {
           </div>
         </main>
       </div>
+
+      {/* Create New Project Modal */}
+      {isNewProjectModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0C245C]/40 backdrop-blur-xs p-4">
+          <div className="w-full max-w-md bg-white border border-[#DDE1E7] rounded-xl shadow-2xl p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-[#DDE1E7] pb-3">
+              <div className="flex items-center gap-2">
+                <Folder className="h-4 w-4 text-[#0C245C]" />
+                <h4 className="text-sm font-bold text-[#0C245C] uppercase tracking-wide">
+                  Create New Project
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsNewProjectModalOpen(false)}
+                className="text-[#64748B] hover:text-[#0C245C] p-1 rounded cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProject} className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-semibold text-[#0C245C] block">Project Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Apollo · Edge LLM Engine"
+                  value={newProjectName}
+                  onChange={(e) => setNewProjectName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#DDE1E7] bg-white text-[#0C245C] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0C245C]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="font-semibold text-[#0C245C] block">Description (Optional)</label>
+                <textarea
+                  rows={3}
+                  placeholder="Brief summary of project scope, constraints, and architecture objectives..."
+                  value={newProjectDesc}
+                  onChange={(e) => setNewProjectDesc(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border border-[#DDE1E7] bg-white text-[#0C245C] placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-[#0C245C] resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-[#DDE1E7]">
+                <button
+                  type="button"
+                  onClick={() => setIsNewProjectModalOpen(false)}
+                  className="px-3.5 py-1.5 rounded-lg border border-[#DDE1E7] bg-white text-slate-700 hover:bg-slate-50 font-medium cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingProject || !newProjectName.trim()}
+                  className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-[#0C245C] text-white hover:bg-[#0c245c]/90 font-semibold disabled:opacity-50 cursor-pointer"
+                >
+                  {isCreatingProject ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Create Project</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

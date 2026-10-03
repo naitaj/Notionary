@@ -1,7 +1,6 @@
 from app.schemas.contracts import ExtractionResult
-from app.models.entities import Proposal
+from app.models.entities import Proposal, utc_now
 from typing import List, Dict, Any
-from datetime import datetime, timezone
 
 def build_proposals(project_id: str, result: ExtractionResult, linked_entities: Dict[str, Any]) -> List[Proposal]:
     proposals = []
@@ -17,7 +16,7 @@ def build_proposals(project_id: str, result: ExtractionResult, linked_entities: 
             needs_attention=needs_att,
             link_target_id=link_id,
             status="pending",
-            created_at=datetime.now(timezone.utc)
+            created_at=utc_now()
         ))
         
     for t in result.tasks:
@@ -31,7 +30,7 @@ def build_proposals(project_id: str, result: ExtractionResult, linked_entities: 
             needs_attention=needs_att,
             link_target_id=link_id,
             status="pending",
-            created_at=datetime.now(timezone.utc)
+            created_at=utc_now()
         ))
 
     for c in result.claims:
@@ -44,7 +43,7 @@ def build_proposals(project_id: str, result: ExtractionResult, linked_entities: 
             needs_attention=False,
             link_target_id=None,
             status="pending",
-            created_at=datetime.now(timezone.utc)
+            created_at=utc_now()
         ))
         
     for e in result.experiments:
@@ -58,7 +57,8 @@ def build_proposals(project_id: str, result: ExtractionResult, linked_entities: 
             needs_attention=needs_att,
             link_target_id=link_id,
             status="pending",
-            created_at=datetime.now(timezone.utc)
+            created_at=utc_now()
         ))
+
         
     return proposals

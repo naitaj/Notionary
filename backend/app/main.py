@@ -38,7 +38,7 @@ async def _background_worker_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting Notionary Backend Service", env=settings.ENV)
+    logger.info("Starting Notionary Backend Service (Supabase Postgres)", env=settings.ENV)
     # Ensure database schema is created
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

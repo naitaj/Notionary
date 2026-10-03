@@ -134,7 +134,14 @@ async def get_decision_lineage(
             })
 
     # 3. Alternatives
-    alternatives = decision.alternatives or []
+    raw_alts = decision.alternatives or []
+    alternatives = []
+    for a in raw_alts:
+        if isinstance(a, str):
+            alternatives.append({"name": a, "reason": ""})
+        elif isinstance(a, dict):
+            alternatives.append(a)
+
 
     # 4. Later evidence
     later_evidence = []
