@@ -1256,6 +1256,13 @@ export default function NotionaryDashboard() {
                 Evidence Traceable
               </span>
             </div>
+            <button
+              onClick={() => setActiveTab("knowledge")}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-white hover:bg-slate-50 border border-[#DDE1E7] text-[#0C245C] text-xs font-semibold cursor-pointer shadow-xs transition-colors"
+            >
+              <Upload className="h-3.5 w-3.5 text-[#0C245C]" />
+              <span>Upload Document</span>
+            </button>
             <div className="flex items-center gap-2.5 pl-2 border-l border-[#DDE1E7]">
               <div className="w-8 h-8 rounded-full bg-[#0C245C] text-[#CCFF00] flex items-center justify-center font-mono text-xs font-bold ring-1 ring-[#DDE1E7]">
                 RI
@@ -3053,74 +3060,275 @@ export default function NotionaryDashboard() {
             {/* TAB 9: KNOWLEDGE & DOCS */}
             {activeTab === "knowledge" && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-[#0C245C] tracking-tight">Knowledge &amp; Document Ingestion</h2>
-                  <p className="text-sm text-[#64748B] mt-1">
-                    Hybrid search bar (BM25 + Dense embeddings), drag-and-drop document upload, and chunk inspection.
-                  </p>
-                </div>
-
-                <div className="p-5 rounded-xl bg-white border border-[#DDE1E7] shadow-sm space-y-3">
-                  <form onSubmit={handleHybridSearch} className="flex gap-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search across documents and chunks (BM25 + Semantic Embeddings)..."
-                      className="flex-1 bg-[#F7F7F3] border border-[#DDE1E7] rounded px-4 py-2 text-xs text-[#0C245C] focus:outline-none focus:border-[#0C245C]"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isSearching}
-                      className="px-4 py-2 bg-[#0C245C] hover:bg-[#153378] text-[#CCFF00] font-bold text-xs font-mono rounded flex items-center gap-1.5"
-                    >
-                      <Search className="h-3.5 w-3.5" />
-                      <span>{isSearching ? "Searching..." : "Search"}</span>
-                    </button>
-                  </form>
-
-                  {searchResults.length > 0 && (
-                    <div className="pt-3 border-t border-[#DDE1E7] space-y-2">
-                      <span className="font-mono text-xs font-bold text-[#0C245C]">Matched Chunks ({searchResults.length})</span>
-                      {searchResults.map((r) => (
-                        <div key={r.chunk_id} className="p-3 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-xs space-y-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-[11px] font-semibold text-[#0C245C]">{r.document_title}</span>
-                            <span className="font-mono text-[10px] bg-[#CCFF00] text-[#0C245C] px-1.5 py-0.5 rounded font-bold">
-                              {r.match_type.toUpperCase()} · Score: {Math.round(r.score * 100)}%
-                            </span>
-                          </div>
-                          <p className="text-slate-600 italic">"{r.text}"</p>
-                        </div>
-                      ))}
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-[11px] text-[#0C245C] font-bold uppercase tracking-wider bg-[#CCFF00] px-1.5 py-0.5 rounded">
+                        INGESTION PIPELINE
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                      <span className="font-mono text-[11px] text-[#64748B]">SHA-256 HASH VERIFIED</span>
                     </div>
-                  )}
+                    <h2 className="text-2xl lg:text-3xl font-bold text-[#0C245C] tracking-tight mt-1">
+                      Knowledge &amp; Document Ingestion
+                    </h2>
+                    <p className="text-sm text-[#64748B] mt-1">
+                      Ingest PDFs, Word documents, Markdown specs, or meeting logs with automated chunking, entity extraction, and hybrid vector search.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      onClick={() => loadDocuments(currentProjectId)}
+                      className="px-3.5 h-9 inline-flex items-center gap-2 rounded bg-white hover:bg-slate-50 text-[#0C245C] border border-[#DDE1E7] transition-colors text-xs font-semibold shadow-sm cursor-pointer"
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 text-[#64748B]" />
+                      Refresh Registry
+                    </button>
+                  </div>
                 </div>
 
-                {/* Documents Table */}
-                <div className="bg-white rounded-xl border border-[#DDE1E7] shadow-sm overflow-hidden">
-                  <div className="px-6 py-4 border-b border-[#DDE1E7] flex items-center justify-between">
-                    <h3 className="text-sm font-bold text-[#0C245C] uppercase tracking-wider">Document Registry</h3>
-                    <span className="font-mono text-xs text-[#64748B]">{documents.length} Indexed</span>
-                  </div>
-                  <div className="divide-y divide-[#DDE1E7] text-xs">
-                    {documents.map((doc) => (
-                      <div key={doc.id} className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-xs font-bold text-[#0C245C]">{doc.id.toUpperCase()}</span>
-                            <span className="font-semibold text-[#0C245C]">{doc.title}</span>
-                          </div>
-                          <span className="font-mono text-[10px] text-[#64748B] uppercase">{doc.doc_type}</span>
-                        </div>
-                        <button
-                          onClick={() => viewDocChunks(doc)}
-                          className="px-3 py-1.5 rounded border border-[#DDE1E7] hover:border-[#0C245C] text-[#0C245C] font-mono text-xs font-semibold"
-                        >
-                          View Chunks
-                        </button>
+                {/* 2-Column Grid: Upload Form + Hybrid Search */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Left: Document Upload Card */}
+                  <div className="lg:col-span-6 bg-white rounded-xl border border-[#DDE1E7] p-6 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-[#DDE1E7]">
+                      <div className="flex items-center gap-2">
+                        <Upload className="h-4 w-4 text-[#0C245C]" />
+                        <h3 className="text-sm font-bold text-[#0C245C] uppercase tracking-wider">
+                          Ingest New Document
+                        </h3>
                       </div>
-                    ))}
+                      <span className="font-mono text-[10px] text-[#64748B] uppercase font-semibold">
+                        PDF · DOCX · MD · TXT · CSV
+                      </span>
+                    </div>
+
+                    <form onSubmit={handleDocumentUpload} className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-[#0C245C] mb-1.5">
+                          Select Document File
+                        </label>
+                        <div className="border-2 border-dashed border-[#DDE1E7] hover:border-[#0C245C] rounded-lg p-4 bg-[#F7F7F3] transition-colors">
+                          <input
+                            type="file"
+                            accept=".pdf,.docx,.md,.markdown,.txt,.csv"
+                            onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                            className="w-full text-xs text-slate-700 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-bold file:bg-[#0C245C] file:text-[#CCFF00] hover:file:bg-[#153378] cursor-pointer"
+                          />
+                          {uploadFile && (
+                            <p className="mt-2 font-mono text-[11px] text-[#0C245C] font-semibold">
+                              Selected: {uploadFile.name} ({(uploadFile.size / 1024).toFixed(1)} KB)
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0C245C] mb-1">
+                            Document Title (optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={uploadTitle}
+                            onChange={(e) => setUploadTitle(e.target.value)}
+                            placeholder="e.g. DOC-05 System Architecture"
+                            className="w-full bg-[#F7F7F3] border border-[#DDE1E7] rounded px-3 py-2 text-xs text-[#0C245C] focus:outline-none focus:border-[#0C245C]"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-[#0C245C] mb-1">
+                            Document Category
+                          </label>
+                          <select
+                            value={uploadDocType}
+                            onChange={(e) => setUploadDocType(e.target.value)}
+                            className="w-full bg-[#F7F7F3] border border-[#DDE1E7] rounded px-3 py-2 text-xs text-[#0C245C] focus:outline-none focus:border-[#0C245C]"
+                          >
+                            <option value="note">Auto-Classify (Default)</option>
+                            <option value="design_doc">Design Document</option>
+                            <option value="experiment_log">Experiment Log</option>
+                            <option value="meeting_note">Meeting Note</option>
+                            <option value="paper">Academic Paper</option>
+                            <option value="dataset_card">Dataset Card</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                        <button
+                          type="submit"
+                          disabled={!uploadFile || isUploading}
+                          className="px-4 py-2.5 bg-[#CCFF00] hover:bg-[#b8e600] disabled:opacity-50 text-[#0C245C] border border-[#b8e600] rounded font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer shadow-sm transition-all"
+                        >
+                          {isUploading ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                          <span>{isUploading ? "Validating & Ingesting..." : "Upload & Parse"}</span>
+                        </button>
+                        {uploadMessage && (
+                          <span className="font-mono text-[11px] text-[#0C245C] bg-[#F7F7F3] border border-[#DDE1E7] px-2.5 py-1.5 rounded truncate max-w-sm">
+                            {uploadMessage}
+                          </span>
+                        )}
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Right: Hybrid Search */}
+                  <div className="lg:col-span-6 bg-white rounded-xl border border-[#DDE1E7] p-6 shadow-sm flex flex-col justify-between space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between pb-3 border-b border-[#DDE1E7]">
+                        <div className="flex items-center gap-2">
+                          <Search className="h-4 w-4 text-[#0C245C]" />
+                          <h3 className="text-sm font-bold text-[#0C245C] uppercase tracking-wider">
+                            Hybrid Corpus Search
+                          </h3>
+                        </div>
+                        <span className="font-mono text-[10px] text-[#64748B] font-semibold">
+                          BM25 + DENSE EMBEDDINGS
+                        </span>
+                      </div>
+
+                      <form onSubmit={handleHybridSearch} className="flex gap-2">
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search across documents and chunks..."
+                          className="flex-1 bg-[#F7F7F3] border border-[#DDE1E7] rounded px-3 py-2 text-xs text-[#0C245C] focus:outline-none focus:border-[#0C245C]"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isSearching}
+                          className="px-4 py-2 bg-[#0C245C] hover:bg-[#153378] text-[#CCFF00] font-bold text-xs font-mono rounded flex items-center gap-1.5 shadow-sm cursor-pointer"
+                        >
+                          <Search className="h-3.5 w-3.5" />
+                          <span>{isSearching ? "Searching..." : "Search"}</span>
+                        </button>
+                      </form>
+
+                      {searchResults.length > 0 && (
+                        <div className="pt-2 space-y-2 max-h-[220px] overflow-y-auto">
+                          <span className="font-mono text-xs font-bold text-[#0C245C]">Matched Chunks ({searchResults.length})</span>
+                          {searchResults.map((r) => (
+                            <div key={r.chunk_id} className="p-3 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-xs space-y-1">
+                              <div className="flex items-center justify-between">
+                                <span className="font-mono text-[11px] font-semibold text-[#0C245C]">{r.document_title}</span>
+                                <span className="font-mono text-[10px] bg-[#CCFF00] text-[#0C245C] px-1.5 py-0.5 rounded font-bold">
+                                  {r.match_type.toUpperCase()} · Score: {Math.round(r.score * 100)}%
+                                </span>
+                              </div>
+                              <p className="text-slate-600 italic">"{r.text}"</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-[#DDE1E7] flex items-center justify-between text-[11px] text-[#64748B] font-mono">
+                      <span>Supported encodings: UTF-8, Binary</span>
+                      <span>Target DB: Evidence Store</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Lower Grid: Document Registry (Left) + Selected Document Chunks (Right) */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                  {/* Document Registry Table */}
+                  <div className="lg:col-span-5 bg-white rounded-xl border border-[#DDE1E7] shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-[#DDE1E7] flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-[#0C245C]" />
+                        <h3 className="text-sm font-bold text-[#0C245C] uppercase tracking-wider">Document Registry</h3>
+                      </div>
+                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-[#0C245C] font-semibold">
+                        {documents.length} Indexed
+                      </span>
+                    </div>
+                    <div className="divide-y divide-[#DDE1E7] text-xs max-h-[460px] overflow-y-auto">
+                      {documents.map((doc) => {
+                        const isSelected = selectedDoc?.id === doc.id;
+                        return (
+                          <div
+                            key={doc.id}
+                            onClick={() => viewDocChunks(doc)}
+                            className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
+                              isSelected ? "bg-[#CCFF00]/15 border-l-4 border-l-[#0C245C]" : "hover:bg-slate-50"
+                            }`}
+                          >
+                            <div className="space-y-1 min-w-0 pr-3">
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-xs font-bold text-[#0C245C]">{doc.id.toUpperCase()}</span>
+                                <span className="font-semibold text-[#0C245C] truncate">{doc.title}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-mono text-[10px] text-[#64748B] uppercase">{doc.doc_type}</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span className="font-mono text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
+                                  {doc.pipeline_status || "indexed"}
+                                </span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                viewDocChunks(doc);
+                              }}
+                              className={`px-3 py-1.5 rounded border text-xs font-mono font-semibold transition-colors shrink-0 cursor-pointer ${
+                                isSelected
+                                  ? "bg-[#0C245C] text-[#CCFF00] border-[#0C245C]"
+                                  : "border-[#DDE1E7] hover:border-[#0C245C] text-[#0C245C]"
+                              }`}
+                            >
+                              {isSelected ? "Inspecting" : "Chunks"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Selected Document Chunks Inspector */}
+                  <div className="lg:col-span-7 bg-white rounded-xl border border-[#DDE1E7] shadow-sm overflow-hidden flex flex-col">
+                    <div className="px-6 py-4 border-b border-[#DDE1E7] flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Layers className="h-4 w-4 text-[#0C245C]" />
+                        <h3 className="text-sm font-bold text-[#0C245C] uppercase tracking-wider truncate">
+                          {selectedDoc ? `Chunks · ${selectedDoc.title}` : "Document Chunks"}
+                        </h3>
+                      </div>
+                      <span className="font-mono text-xs text-[#64748B]">
+                        {docChunks.length} Chunks
+                      </span>
+                    </div>
+
+                    <div className="p-4 overflow-y-auto max-h-[460px] space-y-3 bg-[#F7F7F3]">
+                      {isLoadingChunks ? (
+                        <div className="p-8 text-center text-xs text-[#64748B] font-mono flex items-center justify-center gap-2">
+                          <RefreshCw className="h-4 w-4 animate-spin text-[#0C245C]" />
+                          Loading parsed chunks...
+                        </div>
+                      ) : docChunks.length === 0 ? (
+                        <div className="p-8 text-center text-xs text-[#64748B]">
+                          Select a document to inspect its parsed chunks and character boundaries.
+                        </div>
+                      ) : (
+                        docChunks.map((chunk, idx) => (
+                          <div key={chunk.id || idx} className="p-4 rounded-lg bg-white border border-[#DDE1E7] shadow-2xs space-y-2">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-mono text-[11px] font-bold text-[#0C245C] bg-[#F7F7F3] border border-[#DDE1E7] px-2 py-0.5 rounded">
+                                {chunk.heading_path || `Section ${idx + 1}`}
+                              </span>
+                              <span className="font-mono text-[10px] text-[#64748B]">
+                                chars {chunk.char_start}–{chunk.char_end}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-700 leading-relaxed font-sans bg-[#F7F7F3] p-3 rounded border border-[#DDE1E7] whitespace-pre-wrap">
+                              {chunk.text}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
