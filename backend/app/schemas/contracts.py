@@ -253,16 +253,19 @@ class ImpactAffectedItem(BaseModel):
     path_description: str
     status: str
     suggested_action: str
+    ai_explanation: Optional[str] = None  # LLM one-sentence explanation (Plan §7.4), labeled "AI suggestion"
     origin: str = "human_authored"
 
 class ClassifiedImpact(BaseModel):
     schema_version: str = SCHEMA_VERSION
     project_id: str
     decision_id: str
+    analysis_id: Optional[str] = None
     scenario: str = "actual"  # actual, what_if
     total_affected: int
     summary: str
     affected_items: List[ImpactAffectedItem] = Field(default_factory=list)
+    completeness_hints: List[Dict[str, Any]] = Field(default_factory=list)  # Plan §7.3: nodes with zero upstream links
 
 # ----------------- Coverage & Missing Evidence -----------------
 
@@ -275,10 +278,65 @@ class CoverageCheckItem(BaseModel):
 class CoverageResult(BaseModel):
     schema_version: str = SCHEMA_VERSION
     claim_id: str
+    claim_code: Optional[str] = None
     claim_statement: str
     coverage_status: str  # verified, partial, missing_evidence
+    taxonomy_status: str = "unsupported"  # well_supported, partially_supported, unsupported, potentially_contradicted, potentially_stale
+    badge_text: str = "Evidence incomplete"
+    missing_fields: List[str] = Field(default_factory=list)
     checklist: List[CoverageCheckItem] = Field(default_factory=list)
     summary_verdict: str
+
+# ----------------- Project Health (6 Dimensions) -----------------
+
+class HealthDimensionDetail(BaseModel):
+    name: str  # execution, evidence_coverage, documentation_health, decision_stability, dependency_health, knowledge_consistency
+    label: str
+    traffic_light: str  # green, amber, red
+    threshold_rule: str
+    metrics: Dict[str, Any] = Field(default_factory=dict)
+    drilldown_items: List[Dict[str, Any]] = Field(default_factory=list)
+
+class ProjectHealthResponse(BaseModel):
+    schema_version: str = SCHEMA_VERSION
+    project_id: str
+    dimensions: Dict[str, HealthDimensionDetail] = Field(default_factory=dict)
+    summary_lights: Dict[str, int] = Field(default_factory=lambda: {"green": 0, "amber": 0, "red": 0})
+    # Backwards-compatible fields for legacy clients
+    evidence_coverage: float = 0.0
+    blocked_tasks_count: int = 0
+    open_contradictions_count: int = 0
+    stale_decisions_count: int = 0
+    active_decisions_count: int = 0
+    experiments_count: int = 0
+    health_score: float = 0.0
+
+# ----------------- Experiment Summaries -----------------
+
+class ExperimentSummaryResponse(BaseModel):
+    schema_version: str = SCHEMA_VERSION
+    experiment_id: str
+    code: str
+    hypothesis: Optional[str] = None
+    model: Optional[str] = None
+    status: str
+    setup: Dict[str, Any] = Field(default_factory=dict)
+    results_table: List[Dict[str, Any]] = Field(default_factory=list)
+    comparison_to_baseline: Dict[str, Any] = Field(default_factory=dict)
+    linked_decisions: List[Dict[str, Any]] = Field(default_factory=list)
+    ai_summary: Optional[str] = None
+
+# ----------------- Blocked Tasks -----------------
+
+class BlockedTaskDerivation(BaseModel):
+    task_id: str
+    task_code: Optional[str] = None
+    title: str
+    status: str
+    is_blocked: bool
+    blocked_reason: Optional[str] = None
+    blockage_source: str = "none"  # manual_override, upstream_task, superseded_decision, unapproved_decision, none
+    upstream_chain: List[Dict[str, Any]] = Field(default_factory=list)
 
 # ----------------- Weekly Reports -----------------
 
@@ -292,7 +350,9 @@ class ReportSections(BaseModel):
     tasks_progress_and_blocked: List[Dict[str, Any]] = Field(default_factory=list)
     contradictions_flagged: List[Dict[str, Any]] = Field(default_factory=list)
     stale_artifacts: List[Dict[str, Any]] = Field(default_factory=list)
+    missing_evidence: List[Dict[str, Any]] = Field(default_factory=list)
     milestone_risks: List[Dict[str, Any]] = Field(default_factory=list)
+    upcoming_work: List[Dict[str, Any]] = Field(default_factory=list)
 
 # ----------------- Job & Event Contracts -----------------
 

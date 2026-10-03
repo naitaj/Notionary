@@ -16,6 +16,8 @@ from app.api.v1.search import router as search_router
 from app.api.v1.proposals import router as proposals_router
 from app.api.v1.edges import router as edges_router
 from app.api.v1.graph import router as graph_router
+from app.api.v1.coverage import router as coverage_router
+from app.api.v1.reports import router as reports_router
 
 router = APIRouter()
 
@@ -36,3 +38,5 @@ router.include_router(search_router)
 router.include_router(proposals_router, prefix="/proposals", tags=["proposals"])
 router.include_router(edges_router)
 router.include_router(graph_router)
+router.include_router(coverage_router)
+router.include_router(reports_router)

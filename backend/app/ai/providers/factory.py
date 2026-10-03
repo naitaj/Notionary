@@ -5,6 +5,7 @@ from app.ai.providers.anthropic_provider import AnthropicProvider
 from app.ai.providers.gemini_provider import GeminiProvider
 from app.ai.providers.mock_provider import MockLLMProvider, LocalEmbeddingProvider
 from app.ai.providers.groq_provider import GroqProvider
+from app.ai.resilience import ResilientLLMProvider
 
 _llm_instance = None
 _embedding_instance = None
@@ -14,19 +15,20 @@ def get_llm_provider() -> LLMProvider:
     if _llm_instance:
         return _llm_instance
 
+    raw_provider: LLMProvider
     if app_settings.GROQ_API_KEY:
-        _llm_instance = GroqProvider()
-        return _llm_instance
-
-    provider_name = settings.DEFAULT_LLM_PROVIDER.lower()
-    if provider_name == "anthropic" and settings.ANTHROPIC_API_KEY:
-        _llm_instance = AnthropicProvider()
-    elif provider_name == "gemini" and settings.GEMINI_API_KEY:
-        _llm_instance = GeminiProvider()
+        raw_provider = GroqProvider()
     else:
-        # Graceful fallback to deterministic mock provider
-        _llm_instance = MockLLMProvider()
-    
+        provider_name = settings.DEFAULT_LLM_PROVIDER.lower()
+        if provider_name == "anthropic" and settings.ANTHROPIC_API_KEY:
+            raw_provider = AnthropicProvider()
+        elif provider_name == "gemini" and settings.GEMINI_API_KEY:
+            raw_provider = GeminiProvider()
+        else:
+            raw_provider = MockLLMProvider()
+
+    # Wrap in resilience layer with 15s timeout and cache fallback (Plan §9.3)
+    _llm_instance = ResilientLLMProvider(primary=raw_provider, fallback=MockLLMProvider(), timeout_seconds=15.0)
     return _llm_instance
 
 def get_embedding_provider() -> EmbeddingProvider:

@@ -125,3 +125,34 @@ async def get_task_context(
         why_explanation=why_text,
         chain=chain
     )
+
+
+@router.get("/{task_id}/blocked-status")
+async def get_task_blocked_status(
+    task_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Plan §8.5: Rule-based derivation of task blockage.
+    Checks manual override, upstream incomplete tasks, and foundation decision status.
+    """
+    from app.graph.blocked_tasks import derive_task_blockage
+
+    res = await db.execute(select(Task).where(Task.id == task_id))
+    task = res.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    return await derive_task_blockage(db, task)
+
+
+@router.get("/project/{project_id}/blocked")
+async def get_project_blocked_tasks(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Derive blockage for all tasks in a project."""
+    from app.graph.blocked_tasks import derive_all_project_tasks_blockage
+
+    return await derive_all_project_tasks_blockage(db, project_id)
+

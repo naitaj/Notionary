@@ -1,123 +1,263 @@
+"""
+Phase 7 — Change-Impact Analysis API
+
+Endpoints (Plan §7.5):
+  POST /impact/analyze   — run deterministic impact analysis
+  GET  /impact/{id}      — retrieve a stored analysis
+  POST /impact/{id}/apply — apply selected actions (needs_reevaluation, stale flags)
+"""
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel
+
 from app.database import get_db
-from app.models.entities import Decision, Task, Deliverable, Edge, ImpactAnalysis
+from app.models.entities import (
+    Decision, Task, Document, ImpactAnalysis, StaleFlag, Edge,
+)
+from app.graph.impact import compute_impact, add_llm_explanations
+from app.schemas.contracts import ClassifiedImpact, ImpactAffectedItem
 
 router = APIRouter(prefix="/impact", tags=["Impact Analysis"])
+
+
+# ── Request / Response schemas ────────────────────────────────────────
 
 class ImpactAnalyzeRequest(BaseModel):
     project_id: str
     decision_id: str
-    scenario: Optional[str] = "actual"  # actual or what_if
-    proposed_change: Optional[str] = None
+    scenario: Optional[str] = "actual"          # actual | what_if
+    include_proposed: bool = False               # include ai_inferred/unreviewed edges
+    proposed_change: Optional[str] = None        # free text for what-if context
+    add_llm_phrasing: bool = True                # attempt LLM one-sentence explanations
 
-class AffectedItem(BaseModel):
+
+class ImpactApplyRequest(BaseModel):
+    apply_items: List[str] = Field(
+        default_factory=list,
+        description="IDs of affected items to apply actions on",
+    )
+    create_reevaluation_tasks: bool = False
+    reevaluation_task_prefix: str = "Re-evaluate"
+
+
+class ImpactApplyResponse(BaseModel):
+    impact_id: str
+    tasks_flagged: int
+    docs_flagged_stale: int
+    reevaluation_tasks_created: int
+    actions_taken: List[Dict[str, Any]]
+
+
+class StoredImpactResponse(BaseModel):
     id: str
-    code: str
-    title: str
-    type: str  # task, deliverable, document, experiment
-    hop: int
-    path_explanation: str
-    status: str
-    suggested_action: str
-
-class ImpactAnalyzeResponse(BaseModel):
-    trigger_decision: Dict[str, Any]
+    project_id: str
+    trigger_decision_id: str
     scenario: str
-    total_affected: int
-    summary: str
-    affected_items: List[AffectedItem]
+    results: Dict[str, Any]
+    actions_taken: Dict[str, Any]
+    created_at: str
 
-@router.post("/analyze", response_model=ImpactAnalyzeResponse)
-async def analyze_impact(data: ImpactAnalyzeRequest, db: AsyncSession = Depends(get_db)):
-    d_res = await db.execute(select(Decision).where(Decision.id == data.decision_id))
-    decision = d_res.scalar_one_or_none()
+
+# ── POST /impact/analyze ─────────────────────────────────────────────
+
+@router.post("/analyze", response_model=ClassifiedImpact)
+async def analyze_impact(
+    data: ImpactAnalyzeRequest,
+    db: AsyncSession = Depends(get_db),
+) -> ClassifiedImpact:
+    """
+    Run deterministic change-impact analysis from a decision.
+
+    The analysis traverses the evidence graph using approved edges
+    (forward on resulted_in / contributes_to / modifies; reverse on
+    depends_on / assumes / describes) and returns every affected node
+    with its path, classification, and ranking.  Optionally adds LLM
+    one-sentence explanations (graceful degradation).
+    """
+    # Validate decision exists
+    dec_res = await db.execute(
+        select(Decision).where(Decision.id == data.decision_id)
+    )
+    decision = dec_res.scalar_one_or_none()
     if not decision:
         raise HTTPException(status_code=404, detail="Decision not found")
 
-    affected_items: List[AffectedItem] = []
-
-    # Hop 1: Direct tasks depending on this decision
-    tasks_res = await db.execute(
-        select(Task).where(
-            (Task.origin_decision_id == decision.id) | (Task.project_id == data.project_id)
-        )
-    )
-    all_tasks = tasks_res.scalars().all()
-    
-    # Filter tasks directly originating from this decision
-    direct_tasks = [t for t in all_tasks if t.origin_decision_id == decision.id]
-
-    for t in direct_tasks:
-        affected_items.append(AffectedItem(
-            id=t.id,
-            code=t.code,
-            title=t.title,
-            type="task",
-            hop=1,
-            path_explanation=f"{decision.code} ──resulted_in──> {t.code}",
-            status=t.status,
-            suggested_action="Re-evaluate task scope and requirements against new decision",
-        ))
-
-        # Hop 2: Deliverables or downstream milestones
-        deliv_res = await db.execute(
-            select(Deliverable).where(Deliverable.project_id == data.project_id)
-        )
-        for deliv in deliv_res.scalars().all():
-            affected_items.append(AffectedItem(
-                id=deliv.id,
-                code="DL-02",
-                title=deliv.name,
-                type="deliverable",
-                hop=2,
-                path_explanation=f"{decision.code} ──> {t.code} ──contributes_to──> {deliv.name}",
-                status=deliv.status,
-                suggested_action="Verify if release artifact is compatible with the new model",
-            ))
-            break
-
-    # Architecture Document stale check
-    affected_items.append(AffectedItem(
-        id="doc-arch-01",
-        code="DOC-05",
-        title="System Architecture & Edge Deployment Spec v1",
-        type="document",
-        hop=1,
-        path_explanation=f"{decision.code} ──specifies──> DOC-05",
-        status="stale",
-        suggested_action="Flag document as stale and schedule architecture documentation update",
-    ))
-
-    summary = (
-        f"Simulating change to {decision.code} ('{decision.statement}'). "
-        f"Detected {len(affected_items)} downstream items affected across {max([item.hop for item in affected_items], default=1)} dependency hops."
+    # Compute impact via graph engine
+    result = await compute_impact(
+        db=db,
+        project_id=data.project_id,
+        decision_id=data.decision_id,
+        include_proposed=data.include_proposed,
+        scenario=data.scenario or "actual",
     )
 
-    # Persist analysis
+    # Optional LLM phrasing (Plan §7.4)
+    if data.add_llm_phrasing and result.affected_items:
+        await add_llm_explanations(result.affected_items, decision)
+
+    # Persist the analysis (Plan §3.2 #31)
     analysis = ImpactAnalysis(
         project_id=data.project_id,
-        trigger_decision_id=decision.id,
-        scenario=data.scenario,
+        trigger_decision_id=data.decision_id,
+        scenario=data.scenario or "actual",
         results={
-            "summary": summary,
-            "items": [item.model_dump() for item in affected_items]
-        }
+            "summary": result.summary,
+            "total_affected": result.total_affected,
+            "items": [item.model_dump() for item in result.affected_items],
+            "completeness_hints": result.completeness_hints,
+        },
     )
     db.add(analysis)
     await db.commit()
+    await db.refresh(analysis)
 
-    return ImpactAnalyzeResponse(
-        trigger_decision={
-            "id": decision.id,
-            "code": decision.code,
-            "statement": decision.statement,
-        },
-        scenario=data.scenario,
-        total_affected=len(affected_items),
-        summary=summary,
-        affected_items=affected_items,
+    # Attach persisted ID so the caller can use GET / apply later
+    result.analysis_id = analysis.id
+    return result
+
+
+# ── GET /impact/{id} ─────────────────────────────────────────────────
+
+@router.get("/{impact_id}", response_model=StoredImpactResponse)
+async def get_impact(
+    impact_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Retrieve a previously stored impact analysis."""
+    res = await db.execute(
+        select(ImpactAnalysis).where(ImpactAnalysis.id == impact_id)
+    )
+    analysis = res.scalar_one_or_none()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Impact analysis not found")
+
+    return StoredImpactResponse(
+        id=analysis.id,
+        project_id=analysis.project_id,
+        trigger_decision_id=analysis.trigger_decision_id,
+        scenario=analysis.scenario or "actual",
+        results=analysis.results or {},
+        actions_taken=analysis.actions_taken or {},
+        created_at=analysis.created_at.isoformat() if analysis.created_at else "",
+    )
+
+
+# ── POST /impact/{id}/apply ──────────────────────────────────────────
+
+@router.post("/{impact_id}/apply", response_model=ImpactApplyResponse)
+async def apply_impact(
+    impact_id: str,
+    data: ImpactApplyRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Apply selected impact actions:
+    - Flag affected tasks with ``needs_reevaluation = True``
+    - Create ``StaleFlag`` entries for affected documents
+    - Optionally create re-evaluation tasks
+    """
+    # Load the analysis
+    res = await db.execute(
+        select(ImpactAnalysis).where(ImpactAnalysis.id == impact_id)
+    )
+    analysis = res.scalar_one_or_none()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Impact analysis not found")
+
+    stored_items = (analysis.results or {}).get("items", [])
+
+    # Build a set of selected IDs (or all if empty)
+    selected_ids = set(data.apply_items) if data.apply_items else {
+        item["id"] for item in stored_items
+    }
+
+    tasks_flagged = 0
+    docs_flagged_stale = 0
+    reevaluation_tasks_created = 0
+    actions: List[Dict[str, Any]] = []
+
+    for item in stored_items:
+        if item["id"] not in selected_ids:
+            continue
+
+        entity_type = item.get("entity_type")
+
+        # ── Flag tasks ────────────────────────────────────────────
+        if entity_type == "task":
+            task_res = await db.execute(
+                select(Task).where(Task.id == item["id"])
+            )
+            task = task_res.scalar_one_or_none()
+            if task:
+                task.needs_reevaluation = True
+                tasks_flagged += 1
+                actions.append({
+                    "action": "needs_reevaluation",
+                    "entity_type": "task",
+                    "entity_id": task.id,
+                    "code": task.code,
+                })
+
+                # Optionally create a re-evaluation task
+                if data.create_reevaluation_tasks:
+                    new_task = Task(
+                        project_id=analysis.project_id,
+                        code=f"RE-{task.code}",
+                        title=f"{data.reevaluation_task_prefix}: {task.title}",
+                        status="todo",
+                        priority="high",
+                        origin_decision_id=analysis.trigger_decision_id,
+                        origin=task.origin,
+                    )
+                    db.add(new_task)
+                    reevaluation_tasks_created += 1
+                    actions.append({
+                        "action": "created_reevaluation_task",
+                        "entity_type": "task",
+                        "entity_id": new_task.id,
+                        "code": new_task.code,
+                    })
+
+        # ── Flag documents stale ──────────────────────────────────
+        elif entity_type == "document":
+            # Check for existing active stale flag
+            existing = await db.execute(
+                select(StaleFlag).where(
+                    StaleFlag.document_id == item["id"],
+                    StaleFlag.status == "active",
+                )
+            )
+            if not existing.scalar_one_or_none():
+                flag = StaleFlag(
+                    project_id=analysis.project_id,
+                    document_id=item["id"],
+                    reasons=[
+                        f"Impacted by change to decision "
+                        f"{analysis.trigger_decision_id}: "
+                        f"{item.get('path_description', '')}"
+                    ],
+                    triggering_record_id=analysis.trigger_decision_id,
+                    status="active",
+                )
+                db.add(flag)
+                docs_flagged_stale += 1
+                actions.append({
+                    "action": "flagged_stale",
+                    "entity_type": "document",
+                    "entity_id": item["id"],
+                    "title": item.get("title"),
+                })
+
+    # Persist actions
+    analysis.actions_taken = {"applied": actions}
+    await db.commit()
+
+    return ImpactApplyResponse(
+        impact_id=impact_id,
+        tasks_flagged=tasks_flagged,
+        docs_flagged_stale=docs_flagged_stale,
+        reevaluation_tasks_created=reevaluation_tasks_created,
+        actions_taken=actions,
     )

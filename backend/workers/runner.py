@@ -93,15 +93,47 @@ async def handle_notion_sync_poll(db: AsyncSession, job: Job):
 
 @register_handler("impact_analysis")
 async def handle_impact_analysis(db: AsyncSession, job: Job):
-    from app.api.v1.impact import analyze_impact, ImpactAnalyzeRequest
+    from app.graph.impact import compute_impact, add_llm_explanations
+    from app.models.entities import ImpactAnalysis, Decision
     project_id = job.project_id or job.payload.get("project_id")
     decision_id = job.payload.get("decision_id")
     scenario = job.payload.get("scenario", "actual")
+    include_proposed = job.payload.get("include_proposed", False)
     await emit_job_event(db, job.id, "starting", f"Analyzing change impact for decision {decision_id}")
-    req = ImpactAnalyzeRequest(project_id=project_id, decision_id=decision_id, scenario=scenario)
-    res = await analyze_impact(req, db=db)
-    await emit_job_event(db, job.id, "completed", f"Impact analysis identified {res.total_affected} affected items")
-    return {"status": "success", "total_affected": res.total_affected, "summary": res.summary}
+
+    result = await compute_impact(
+        db=db,
+        project_id=project_id,
+        decision_id=decision_id,
+        include_proposed=include_proposed,
+        scenario=scenario,
+    )
+
+    # Attempt LLM phrasing (graceful degradation)
+    if result.affected_items:
+        dec_res = await db.execute(select(Decision).where(Decision.id == decision_id))
+        trigger = dec_res.scalar_one_or_none()
+        if trigger:
+            await add_llm_explanations(result.affected_items, trigger)
+
+    # Persist
+    analysis = ImpactAnalysis(
+        project_id=project_id,
+        trigger_decision_id=decision_id,
+        scenario=scenario,
+        results={
+            "summary": result.summary,
+            "total_affected": result.total_affected,
+            "items": [item.model_dump() for item in result.affected_items],
+            "completeness_hints": result.completeness_hints,
+        },
+    )
+    db.add(analysis)
+    await db.commit()
+    await db.refresh(analysis)
+
+    await emit_job_event(db, job.id, "completed", f"Impact analysis identified {result.total_affected} affected items")
+    return {"status": "success", "analysis_id": analysis.id, "total_affected": result.total_affected, "summary": result.summary}
 
 async def process_next_job(worker_id: str = "worker-1", job_id: Optional[str] = None, db: Optional[AsyncSession] = None) -> bool:
     """Claims and executes the next eligible job from the queue (or a specific job_id)."""

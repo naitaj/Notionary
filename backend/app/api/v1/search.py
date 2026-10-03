@@ -8,6 +8,8 @@ from sqlalchemy import select
 from app.database import get_db
 from app.models.entities import Chunk, Document
 from app.ai.providers.factory import get_embedding_provider
+from app.core.auth import get_current_user, UserContext, UserScope
+from app.rag.permissions import get_visibility_filter
 
 router = APIRouter(tags=["Search"])
 
@@ -44,20 +46,32 @@ async def hybrid_search(
     q: str = Query(..., description="Search query"),
     limit: int = Query(10, ge=1, le=50),
     doc_type: Optional[str] = Query(None, description="Optional document type filter"),
+    user: UserContext = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Task 2.8: Hybrid search (keyword + semantic exact scan) filtered by project_id and doc_type.
+    Task 2.8 & 8.7: Hybrid search (keyword + semantic exact scan) filtered by project_id, doc_type, and user visibility permissions.
     """
     clean_q = q.strip()
     if not clean_q:
         return SearchResponse(query=q, total=0, results=[])
+
+    user_role = user.roles_by_project.get(project_id) or user.roles_by_project.get("*", "member")
+    team_ids = user.teams_by_project.get(project_id) or user.teams_by_project.get("*", [])
+    scope = UserScope(
+        user_id=user.id,
+        project_id=project_id,
+        role=user_role,
+        team_ids=team_ids,
+    )
+    vis_filter = get_visibility_filter(scope, Document)
 
     # 1. Fetch candidate chunks with their document metadata
     stmt = (
         select(Chunk, Document.title, Document.doc_type)
         .join(Document, Chunk.document_id == Document.id)
         .where(Chunk.project_id == project_id)
+        .where(vis_filter)
     )
     if doc_type:
         stmt = stmt.where(Document.doc_type == doc_type)
