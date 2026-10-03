@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from app.models.entities import (
-    NotionDatabase, Decision, Task, Experiment, Claim, Deliverable, Milestone, Edge, AuditLog
+    NotionDatabase, Decision, Task, Experiment, Claim, Deliverable, Milestone, Edge, AuditLog, Report, Reference, Project
 )
 from app.notion.client import NotionClient, get_notion_client
 from app.notion.property_maps import map_entity_to_notion_properties
@@ -17,6 +17,8 @@ MODEL_MAP = {
     "claims": Claim,
     "deliverables": Deliverable,
     "milestones": Milestone,
+    "reports": Report,
+    "references": Reference,
 }
 
 async def push_entity_to_notion(
@@ -72,7 +74,7 @@ async def push_entity_to_notion(
     human_hash = compute_human_hash(entity_type, {k: v for k, v in entity.__dict__.items() if not k.startswith("_")})
 
     page_id = entity.notion_page_id
-    page_url = entity.notion_url
+    page_url = getattr(entity, "notion_url", None)
     last_edited = None
 
     if page_id:
@@ -111,11 +113,15 @@ async def push_entity_to_notion(
 
     # 5. Update local record sync metadata
     entity.notion_page_id = page_id
-    entity.notion_url = page_url
-    entity.last_synced_hash = human_hash
-    entity.sync_status = "synced"
-    entity.local_dirty = False
-    if last_edited:
+    if hasattr(entity, "notion_url"):
+        entity.notion_url = page_url
+    if hasattr(entity, "last_synced_hash"):
+        entity.last_synced_hash = human_hash
+    if hasattr(entity, "sync_status"):
+        entity.sync_status = "synced"
+    if hasattr(entity, "local_dirty"):
+        entity.local_dirty = False
+    if last_edited and hasattr(entity, "last_synced_notion_edited_time"):
         entity.last_synced_notion_edited_time = datetime.fromisoformat(last_edited.replace("Z", "+00:00"))
 
     await db.commit()
@@ -129,10 +135,16 @@ async def push_all_pending(
     """Pushes all pending or dirty records across all entity types to Notion."""
     results = {"pushed_count": 0, "errors": []}
     for etype, model_cls in MODEL_MAP.items():
-        stmt = select(model_cls).where(
-            model_cls.project_id == project_id,
-            (model_cls.sync_status == "pending") | (model_cls.notion_page_id.is_(None)) | (model_cls.local_dirty == True),
-        )
+        if hasattr(model_cls, "sync_status"):
+            stmt = select(model_cls).where(
+                model_cls.project_id == project_id,
+                (model_cls.sync_status == "pending") | (model_cls.notion_page_id.is_(None)) | (model_cls.local_dirty == True),
+            )
+        else:
+            stmt = select(model_cls).where(
+                model_cls.project_id == project_id,
+                model_cls.notion_page_id.is_(None),
+            )
         records_res = await db.execute(stmt)
         records = records_res.scalars().all()
         for rec in records:

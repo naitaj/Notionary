@@ -194,11 +194,15 @@ def map_entity_to_notion_properties(
     entity: Any,
     relations: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
-    """Serializes an app database model into Notion page properties."""
     etype = entity_type.lower()
     props: Dict[str, Any] = {}
 
-    if etype == "decisions":
+    if etype == "projects":
+        props["Name"] = {"title": to_title(entity.name)}
+        props["Description"] = {"rich_text": to_rich_text(getattr(entity, "description", ""))}
+        props["POS_ID"] = {"rich_text": to_rich_text(entity.id)}
+
+    elif etype == "decisions":
         title_text = f"[{entity.code}] {entity.statement}"
         props["Decision"] = {"title": to_title(title_text)}
         props["Code"] = {"rich_text": to_rich_text(entity.code)}
@@ -260,6 +264,32 @@ def map_entity_to_notion_properties(
         if entity.due_date:
             props["Due Date"] = {"date": {"start": entity.due_date.strftime("%Y-%m-%d")}}
         props["Progress"] = {"number": (entity.progress_percentage or 0) / 100.0}
+        props["POS_ID"] = {"rich_text": to_rich_text(entity.id)}
+
+    elif etype == "reports":
+        p_start = entity.period_start.strftime("%Y-%m-%d") if hasattr(entity, "period_start") and entity.period_start else "Current"
+        p_end = entity.period_end.strftime("%Y-%m-%d") if hasattr(entity, "period_end") and entity.period_end else "Week"
+        props["Period"] = {"title": to_title(f"Weekly Digest ({p_start} — {p_end})")}
+        if hasattr(entity, "created_at") and entity.created_at:
+            props["Published Date"] = {"date": {"start": entity.created_at.strftime("%Y-%m-%d")}}
+        summary_text = "Weekly project digest"
+        if isinstance(getattr(entity, "sections", None), dict):
+            summary_text = entity.sections.get("executive_paragraph", summary_text)
+        props["Summary"] = {"rich_text": to_rich_text(summary_text)}
+        props["POS_ID"] = {"rich_text": to_rich_text(entity.id)}
+
+    elif etype == "references":
+        props["Title"] = {"title": to_title(entity.title)}
+        props["Authors"] = {"rich_text": to_rich_text(entity.authors)}
+        if getattr(entity, "year", None):
+            try:
+                props["Year"] = {"number": int(entity.year)}
+            except Exception:
+                pass
+        url_val = getattr(entity, "url_or_doi", None)
+        if url_val:
+            props["URL"] = {"url": url_val if url_val.startswith("http") else f"https://doi.org/{url_val}"}
+        props["Key Takeaways"] = {"rich_text": to_rich_text(getattr(entity, "key_takeaways", ""))}
         props["POS_ID"] = {"rich_text": to_rich_text(entity.id)}
 
     # Attach Relation properties if provided

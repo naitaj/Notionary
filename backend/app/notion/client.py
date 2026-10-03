@@ -272,5 +272,17 @@ class NotionClient:
         payload = {"children": children}
         return await self._request("PATCH", f"/blocks/{block_id}/children", payload)
 
+    async def get_block_children(
+        self,
+        block_id: str,
+        page_size: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """Retrieves children blocks of a block or page."""
+        if self.is_mock:
+            return self.mock_pages.get(block_id, {}).get("children", [])
+
+        res = await self._request("GET", f"/blocks/{block_id}/children?page_size={page_size}")
+        return res.get("results", [])
+
 def get_notion_client() -> NotionClient:
     return NotionClient()

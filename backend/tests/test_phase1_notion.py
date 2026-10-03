@@ -19,6 +19,11 @@ from sqlalchemy import select
 def anyio_backend():
     return "asyncio"
 
+@pytest.fixture(autouse=True)
+def mock_notion_env(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "NOTION_API_KEY", "mock_key_for_tests")
+
 @pytest.mark.asyncio
 async def test_notion_rate_limiter():
     limiter = NotionRateLimiter(rate_per_second=10.0, capacity=3.0)
