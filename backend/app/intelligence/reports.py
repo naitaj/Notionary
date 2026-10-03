@@ -34,11 +34,17 @@ async def generate_weekly_report(
     use_llm: bool = True,
 ) -> Tuple[Report, ReportSections]:
     """Generate a weekly intelligence report with deterministic sections and an executive summary."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
     if period_end is None:
         period_end = now
+    elif hasattr(period_end, "replace"):
+        period_end = period_end.replace(tzinfo=None)
+
     if period_start is None:
         period_start = period_end - timedelta(days=7)
+    elif hasattr(period_start, "replace"):
+        period_start = period_start.replace(tzinfo=None)
+
 
     # 1. Experiments completed in window
     exp_res = await db.execute(

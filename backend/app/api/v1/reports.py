@@ -24,6 +24,7 @@ router = APIRouter(prefix="/reports", tags=["Weekly Reports"])
 class ReportGenerateRequest(BaseModel):
     period_start: Optional[datetime] = None
     period_end: Optional[datetime] = None
+    time_window_days: Optional[int] = 7
     use_llm: bool = True
 
 
@@ -44,14 +45,25 @@ async def generate_project_weekly_report(
     db: AsyncSession = Depends(get_db),
 ):
     """Generate weekly intelligence report for a project."""
+    from datetime import timezone, timedelta
     req = data or ReportGenerateRequest()
+    days = req.time_window_days or 7
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    end_dt = req.period_end or now
+    start_dt = req.period_start or (end_dt - timedelta(days=days))
+    if hasattr(end_dt, "replace"):
+        end_dt = end_dt.replace(tzinfo=None)
+    if hasattr(start_dt, "replace"):
+        start_dt = start_dt.replace(tzinfo=None)
+
     report, _ = await generate_weekly_report(
         db=db,
         project_id=project_id,
-        period_start=req.period_start,
-        period_end=req.period_end,
+        period_start=start_dt,
+        period_end=end_dt,
         use_llm=req.use_llm,
     )
+
     return ReportResponse(
         id=report.id,
         project_id=report.project_id,
