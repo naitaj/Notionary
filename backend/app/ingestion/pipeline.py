@@ -16,6 +16,7 @@ async def ingest_document(
     db: AsyncSession,
     document_id: str,
     job_id: Optional[str] = None,
+    auto_extract: bool = False,
 ) -> Dict[str, Any]:
     """
     Executes the ingestion pipeline for a document:
@@ -111,7 +112,7 @@ async def ingest_document(
             )
 
         # Step 6: Completion
-        if document.doc_type == "meeting_note":
+        if (document.doc_type == "meeting_note" or auto_extract) and document.doc_type != "benchmark_csv":
             from workers.runner import enqueue_job
             await enqueue_job(
                 db=db,
@@ -161,7 +162,8 @@ async def ingest_document(
 async def handle_document_ingest_job(db: AsyncSession, job: Any):
     """Job runner worker handler for 'document_ingest'."""
     doc_id = job.payload.get("document_id")
+    auto_extract = job.payload.get("auto_extract", False)
     if not doc_id:
         raise ValueError("Missing 'document_id' in job payload")
     
-    return await ingest_document(db, doc_id, job_id=job.id)
+    return await ingest_document(db, doc_id, job_id=job.id, auto_extract=auto_extract)

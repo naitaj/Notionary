@@ -45,9 +45,13 @@ async def reset_demo_state(db: AsyncSession = Depends(get_db)):
     - M-04 and EXP-09 are DELIBERATELY EXCLUDED so presenter can run live upload & structuring.
     """
     res = await db.execute(select(Project).where(Project.name == PROJECT_NAME))
-    project = res.scalar_one_or_none()
+    projects = res.scalars().all()
 
-    if project:
+    if projects:
+        project = projects[0]
+        for dup in projects[1:]:
+            await _clean_project_data(db, dup.id)
+            await db.delete(dup)
         await _clean_project_data(db, project.id)
     else:
         project = Project(
@@ -106,34 +110,6 @@ async def reset_demo_state(db: AsyncSession = Depends(get_db)):
         key_takeaways="PlantVillage benchmark achieves >99% under lab conditions, but cautions on field generalization drop.",
     )
     db.add_all([ref1, ref2])
-
-    # 4. Baseline System Architecture Document
-    doc_text = (
-        "LeafGuard Edge Architecture Spec v1.0\n"
-        "Project Goal: Provide real-time offline detection of cassava and tomato leaf blights.\n"
-        "Hardware Target: Low-cost Android devices (ARM Cortex-A53, 2GB RAM).\n"
-        "Hard Constraints: Max model storage 20MB. Max inference latency 20ms per image.\n"
-        "Field Conditions: High humidity, variable sunlight, intermittent power.\n"
-    )
-    doc_spec = Document(
-        project_id=pid,
-        title="DOC-01: LeafGuard System Architecture Spec",
-        content_text=doc_text,
-        doc_type="design_doc",
-        pipeline_status="completed",
-    )
-    db.add(doc_spec)
-    await db.flush()
-
-    chunk_spec = Chunk(
-        project_id=pid,
-        document_id=doc_spec.id,
-        heading_path="Overview > Constraints",
-        char_start=0,
-        char_end=len(doc_text),
-        text=doc_text,
-    )
-    db.add(chunk_spec)
 
     # 5. Baseline Exploratory Experiment
     exp01 = Experiment(
@@ -364,36 +340,7 @@ async def seed_full_demo(db: AsyncSession = Depends(get_db)):
     )
     db.add(contradiction)
 
-    # 8. Documents & Chunks
-    doc_m04_text = (
-        "Meeting Minutes: Core ML Sync M-04 (March 15, 2026)\n"
-        "Attendees: Rohan Sharma, Ananya Patel, Meera Sen\n"
-        "Decision D-17: Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.\n"
-        "Rationale: MobileNetV3 meets our strict 20ms latency ceiling clocking 14.2ms while maintaining 91.2% accuracy.\n"
-        "Task T-14: Meera will quantize MobileNetV3 to INT8 by March 25.\n"
-        "Task T-15: Ananya will collect supplementary shadow dataset once quantization baseline completes.\n"
-    )
-    doc_m04 = Document(
-        project_id=pid,
-        title="M-04: Core ML Architecture Sync",
-        content_text=doc_m04_text,
-        doc_type="meeting_note",
-        pipeline_status="completed",
-    )
-    db.add(doc_m04)
-    await db.flush()
-
-    chunk_m04 = Chunk(
-        project_id=pid,
-        document_id=doc_m04.id,
-        heading_path="Meeting Minutes > Core Decisions",
-        char_start=0,
-        char_end=len(doc_m04_text),
-        text=doc_m04_text,
-    )
-    db.add(chunk_m04)
-
-    # 9. Edges (Graph relations)
+    # 8. Edges (Graph relations)
     edges = [
         Edge(
             project_id=pid,
@@ -446,14 +393,6 @@ async def seed_full_demo(db: AsyncSession = Depends(get_db)):
             to_type="deliverable",
             to_id=deliverable.id,
             edge_type="contributes_to",
-        ),
-        Edge(
-            project_id=pid,
-            from_type="document",
-            from_id=doc_m04.id,
-            to_type="decision",
-            to_id=d17.id,
-            edge_type="describes",
         ),
     ]
     db.add_all(edges)

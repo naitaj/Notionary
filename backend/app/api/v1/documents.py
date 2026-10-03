@@ -52,6 +52,7 @@ async def upload_document(
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
     doc_type: Optional[str] = Form(None),
+    auto_extract: bool = Form(False),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -91,6 +92,7 @@ async def upload_document(
             "document_id": document.id,
             "project_id": project_id,
             "filename": filename,
+            "auto_extract": auto_extract,
         },
         project_id=project_id,
     )
@@ -169,3 +171,74 @@ async def retry_document_ingestion(
     )
 
     return {"status": "retrying", "document_id": doc.id, "job_id": job.id}
+
+@router.delete("/documents/{document_id}", status_code=status.HTTP_200_OK)
+async def delete_document(
+    document_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Deletes a document, its chunks, and associated local file."""
+    stmt = select(Document).where(Document.id == document_id)
+    res = await db.execute(stmt)
+    doc = res.scalars().first()
+    if not doc:
+        raise ProblemException(status=404, title="Not Found", detail=f"Document {document_id} not found")
+
+    # Delete chunks
+    await db.execute(delete(Chunk).where(Chunk.document_id == document_id))
+
+    # Remove physical file if present
+    if doc.file_uri and os.path.exists(doc.file_uri):
+        try:
+            os.remove(doc.file_uri)
+        except Exception:
+            pass
+
+    await db.delete(doc)
+    await db.commit()
+    return {"status": "deleted", "document_id": document_id}
+
+@router.delete("/projects/{project_id}/documents", status_code=status.HTTP_200_OK)
+async def clear_project_documents(
+    project_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Deletes all documents and chunks for a given project."""
+    stmt = select(Document).where(Document.project_id == project_id)
+    res = await db.execute(stmt)
+    docs = res.scalars().all()
+
+    for doc in docs:
+        await db.execute(delete(Chunk).where(Chunk.document_id == doc.id))
+        if doc.file_uri and os.path.exists(doc.file_uri):
+            try:
+                os.remove(doc.file_uri)
+            except Exception:
+                pass
+        await db.delete(doc)
+
+    await db.commit()
+    return {"status": "cleared", "deleted_count": len(docs)}
+
+@router.post("/documents/{document_id}/extract", status_code=status.HTTP_202_ACCEPTED)
+async def trigger_document_extraction(
+    document_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Triggers AI extraction of decisions, tasks, claims, and experiments into proposals."""
+    stmt = select(Document).where(Document.id == document_id)
+    res = await db.execute(stmt)
+    doc = res.scalars().first()
+    if not doc:
+        raise ProblemException(status=404, title="Not Found", detail=f"Document {document_id} not found")
+
+    job = await enqueue_job(
+        db=db,
+        job_type="extraction",
+        payload={"document_id": doc.id},
+        project_id=doc.project_id,
+    )
+    doc.pipeline_status = "chunked"
+    await db.commit()
+
+    return {"status": "extraction_enqueued", "document_id": doc.id, "job_id": job.id}

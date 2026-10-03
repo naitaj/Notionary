@@ -1,5 +1,6 @@
 import sys
 import os
+import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +20,22 @@ from app.api.v1 import router as api_v1_router
 # Initialize structured logging
 setup_logging(debug=settings.DEBUG)
 
+async def _background_worker_task():
+    logger.info("Notionary Background Worker Task Started")
+    from workers.runner import process_next_job
+    while True:
+        try:
+            processed = await process_next_job(worker_id="backend-worker")
+            if not processed:
+                await asyncio.sleep(1.0)
+            else:
+                await asyncio.sleep(0.1)
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error("Error in background worker", error=str(e))
+            await asyncio.sleep(2.0)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Notionary Backend Service", env=settings.ENV)
@@ -26,8 +43,16 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     logger.info("Database schemas verified and initialized")
-    yield
-    logger.info("Shutting down Notionary Backend Service")
+    worker = asyncio.create_task(_background_worker_task())
+    try:
+        yield
+    finally:
+        worker.cancel()
+        try:
+            await worker
+        except asyncio.CancelledError:
+            pass
+        logger.info("Shutting down Notionary Backend Service")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

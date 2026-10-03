@@ -36,6 +36,7 @@ import {
   Folder,
   BookOpen,
   Lock,
+  Trash2,
 } from "lucide-react";
 
 interface DocumentItem {
@@ -292,89 +293,12 @@ export default function NotionaryDashboard() {
   const [reportUseLlm, setReportUseLlm] = useState<boolean>(true);
   const [isResettingDemo, setIsResettingDemo] = useState<boolean>(false);
   const [resetSuccessMessage, setResetSuccessMessage] = useState<string | null>(null);
+  const [autoExtract, setAutoExtract] = useState<boolean>(true);
+  const [extractingDocId, setExtractingDocId] = useState<string | null>(null);
 
-  // Seed demo data on initial load
+  // Load initial data on mount
   useEffect(() => {
-    fetch("http://localhost:8000/api/v1/seed/demo", { method: "POST" })
-      .then((res) => res.json())
-      .then(() => {
-        loadData();
-      })
-      .catch(() => {
-        // Fallback local state if backend not running yet
-        setHealth({
-          evidence_coverage: 92.4,
-          blocked_tasks_count: 0,
-          open_contradictions_count: 1,
-          stale_decisions_count: 0,
-          active_decisions_count: 1,
-          experiments_count: 2,
-          health_score: 94.5,
-        });
-        setDecisions([
-          {
-            id: "d-17",
-            code: "D-17",
-            statement: "Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.",
-            rationale: "Selected over ResNet50 (93.0% but 98MB) to stay strictly within the 20MB offline phone storage budget while retaining >90% benchmark accuracy.",
-            status: "active",
-            version: 1,
-            decided_by: "Rohan Sharma",
-          },
-        ]);
-        setTasks([
-          {
-            id: "t-14",
-            code: "T-14",
-            title: "Quantize MobileNetV3 model to INT8 via TFLite converter",
-            status: "in_progress",
-            owner: "Meera Sen",
-            priority: "high",
-            origin_decision_id: "d-17",
-            is_blocked: false,
-          },
-          {
-            id: "t-15",
-            code: "T-15",
-            title: "Collect supplementary shadow-augmented training dataset",
-            status: "todo",
-            owner: "Ananya Patel",
-            priority: "medium",
-            is_blocked: false,
-          },
-        ]);
-        setContradictions([
-          {
-            id: "c-01",
-            claim_a_text: "MobileNetV3 provides 91.2% top-1 accuracy (EXP-06 benchmark).",
-            claim_b_text: "Field camera samples drop to 76.4% under harsh sunlight glare (EXP-09).",
-            status: "open",
-            explanation: "EXP-06 benchmark accuracy contradicts EXP-09 field test under direct sun.",
-          },
-        ]);
-        setDocuments([
-          {
-            id: "doc-05",
-            title: "DOC-05: LeafGuard Server Architecture & Edge Inference Pipeline",
-            doc_type: "design_doc",
-            pipeline_status: "completed",
-            notion_url: "https://notion.so/leafguard/doc-05",
-          },
-          {
-            id: "log-01",
-            title: "LOG-01: Field Evaluation Logs - Rural Madhya Pradesh",
-            doc_type: "experiment_log",
-            pipeline_status: "completed",
-          },
-          {
-            id: "exp-09",
-            title: "EXP-09: Sunlight Degradation Benchmarks",
-            doc_type: "experiment_log",
-            pipeline_status: "completed",
-          },
-        ]);
-        loadProposals("demo");
-      });
+    loadData();
   }, []);
 
   const loadProposals = async (pId: string) => {
@@ -383,94 +307,18 @@ export default function NotionaryDashboard() {
       if (res.ok) {
         const data = await res.json();
         setProposals(data);
-        if (data.length > 0 && !selectedProposal) {
-          setSelectedProposal(data[0]);
+        if (data.length > 0) {
+          setSelectedProposal((prev) => (prev ? data.find((d: any) => d.id === prev.id) || data[0] : data[0]));
+        } else {
+          setSelectedProposal(null);
         }
+      } else {
+        setProposals([]);
+        setSelectedProposal(null);
       }
     } catch {
-      // Demo proposals extracted from M-04
-      const fallbackProposals: ProposalItem[] = [
-        {
-          id: "prop-d17",
-          project_id: pId,
-          entity_type: "decision",
-          tier: "high",
-          confidence_label: "high",
-          needs_attention: false,
-          status: "pending",
-          payload: {
-            code: "D-17",
-            statement: "Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.",
-            rationale: "MobileNetV3-Small meets our strict 20ms edge latency ceiling (clocking 14.2ms) while maintaining high accuracy (88.2% F1 score), whereas Model A (ResNet-18) exceeded 31ms latency and consumed twice the battery power.",
-            alternatives: [{ name: "Model A (ResNet-18)", reason: "Exceeded 20ms edge latency budget" }],
-            decided_by_alias: "Karan Mehta",
-            decided_date_str: "2026-03-15",
-          },
-          excerpt_text: "Decision D-17: Adopt MobileNetV3-Small as the edge inference architecture for on-device deployment.",
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "prop-t14",
-          project_id: pId,
-          entity_type: "task",
-          tier: "medium",
-          confidence_label: "high",
-          needs_attention: false,
-          status: "pending",
-          payload: {
-            code: "T-14",
-            title: "Quantize MobileNetV3-Small to INT8 via TensorRT-LLM and evaluate accuracy drop by March 25.",
-            owner_alias: "Ananya Patel",
-            due_date_str: "2026-03-25",
-            priority: "high",
-            origin_decision_code: "D-17",
-          },
-          excerpt_text: "Ananya Patel: Agreed. I will take on task T-14: Quantize MobileNetV3-Small to INT8 via TensorRT-LLM and evaluate accuracy drop by March 25.",
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "prop-t15",
-          project_id: pId,
-          entity_type: "task",
-          tier: "medium",
-          confidence_label: "high",
-          needs_attention: false,
-          status: "pending",
-          payload: {
-            code: "T-15",
-            title: "Integrate MobileNetV3-Small inference pipeline into the Android camera capture daemon by March 28.",
-            owner_alias: "Vikram",
-            due_date_str: "2026-03-28",
-            priority: "medium",
-          },
-          excerpt_text: "Vikram: I will handle task T-15: Integrate MobileNetV3-Small inference pipeline into the Android camera capture daemon by March 28.",
-          created_at: new Date().toISOString(),
-        },
-        {
-          id: "prop-exp06",
-          project_id: pId,
-          entity_type: "experiment",
-          tier: "medium",
-          confidence_label: "high",
-          needs_attention: true,
-          status: "pending",
-          payload: {
-            code: "EXP-06",
-            hypothesis: "MobileNetV3-Small achieves 88.2% F1 within 20ms latency",
-            model: "MobileNetV3-Small",
-            dataset: "PlantVillage Clean v2",
-            parameters: { batch_size: 1, precision: "FP16" },
-            owner_alias: "Ananya Patel",
-            metric: "latency",
-            metric_value: 14.2,
-            metric_unit: "ms",
-          },
-          excerpt_text: "MobileNetV3-Small achieves 88.2% F1 accuracy on the PlantVillage Clean v2 dataset with an average inference latency of 14.2ms on the Jetson Nano target board.",
-          created_at: new Date().toISOString(),
-        }
-      ];
-      setProposals(fallbackProposals);
-      setSelectedProposal(fallbackProposals[0]);
+      setProposals([]);
+      setSelectedProposal(null);
     }
   };
 
@@ -568,8 +416,13 @@ export default function NotionaryDashboard() {
       if (res.ok) {
         const docs = await res.json();
         setDocuments(docs);
-        if (docs.length > 0 && !selectedDoc) {
-          viewDocChunks(docs[0]);
+        if (docs.length > 0) {
+          if (!selectedDoc || !docs.some((d: any) => d.id === selectedDoc.id)) {
+            viewDocChunks(docs[0]);
+          }
+        } else {
+          setSelectedDoc(null);
+          setDocChunks([]);
         }
       }
     } catch {
@@ -585,18 +438,11 @@ export default function NotionaryDashboard() {
       if (res.ok) {
         const chunks = await res.json();
         setDocChunks(chunks);
+      } else {
+        setDocChunks([]);
       }
     } catch {
-      setDocChunks([
-        {
-          id: "c-1",
-          document_id: doc.id,
-          heading_path: "Architecture > Edge Constraints",
-          char_start: 0,
-          char_end: 285,
-          text: "MobileNetV3-Small architecture was selected for edge inference deployment on Jetson Nano. The model must satisfy sub-20ms latency and 20MB storage constraints under varying field ambient conditions.",
-        },
-      ]);
+      setDocChunks([]);
     } finally {
       setIsLoadingChunks(false);
     }
@@ -615,19 +461,7 @@ export default function NotionaryDashboard() {
         setSearchResults(data.results || []);
       }
     } catch {
-      setSearchResults([
-        {
-          chunk_id: "demo-chunk-1",
-          document_id: "doc-05",
-          document_title: "DOC-05: Server Architecture & Edge Inference Pipeline",
-          heading_path: "Architecture > Edge Constraints",
-          char_start: 120,
-          char_end: 340,
-          text: "MobileNetV3-Small was evaluated across multiple batch sizes. Benchmarks show 14.2ms latency on FP16 TensorRT runtime.",
-          score: 0.94,
-          match_type: "hybrid",
-        },
-      ]);
+      setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
@@ -643,6 +477,7 @@ export default function NotionaryDashboard() {
       formData.append("file", uploadFile);
       if (uploadTitle) formData.append("title", uploadTitle);
       if (uploadDocType) formData.append("doc_type", uploadDocType);
+      if (autoExtract) formData.append("auto_extract", "true");
 
       const res = await fetch(`http://localhost:8000/api/v1/projects/${currentProjectId}/documents`, {
         method: "POST",
@@ -650,19 +485,112 @@ export default function NotionaryDashboard() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         setUploadMessage(`Upload rejected: ${err.detail || err.title || "Unknown error"}`);
       } else {
         const data = await res.json();
-        setUploadMessage(`Document uploaded! Job enqueued (ID: ${data.job_id.slice(0, 8)}...).`);
+        setUploadMessage(`Document uploaded! Processing ingestion pipeline (Job: ${data.job_id.slice(0, 8)}...)...`);
         setUploadFile(null);
         setUploadTitle("");
-        loadDocuments(currentProjectId);
+        
+        await loadDocuments(currentProjectId);
+        
+        // Poll for processing completion
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const docRes = await fetch(`http://localhost:8000/api/v1/projects/${currentProjectId}/documents`);
+            if (docRes.ok) {
+              const updatedDocs: DocumentItem[] = await docRes.json();
+              setDocuments(updatedDocs);
+              const myDoc = updatedDocs.find((d) => d.id === data.document.id);
+              if (myDoc) {
+                if (myDoc.pipeline_status === "completed" || myDoc.pipeline_status === "extracted") {
+                  clearInterval(pollInterval);
+                  setUploadMessage(`Document "${myDoc.title}" successfully ingested and indexed!`);
+                  viewDocChunks(myDoc);
+                  loadProposals(currentProjectId);
+                  loadCoverage(currentProjectId);
+                }
+              }
+            }
+          } catch {
+            // ignore
+          }
+          if (attempts >= 15) {
+            clearInterval(pollInterval);
+          }
+        }, 1500);
       }
     } catch (err: any) {
       setUploadMessage(`Network error: ${err.message}`);
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    if (typeof window !== "undefined" && !window.confirm("Are you sure you want to delete this document and its indexed chunks?")) {
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/documents/${docId}`, { method: "DELETE" });
+      if (res.ok) {
+        setDocuments((prev) => prev.filter((d) => d.id !== docId));
+        if (selectedDoc?.id === docId) {
+          setSelectedDoc(null);
+          setDocChunks([]);
+        }
+        await loadProposals(currentProjectId);
+      } else {
+        alert("Failed to delete document");
+      }
+    } catch (e: any) {
+      alert("Error deleting document: " + e.message);
+    }
+  };
+
+  const handleClearAllDocuments = async () => {
+    if (typeof window !== "undefined" && !window.confirm("Clear ALL documents and indexed chunks for this project?")) {
+      return;
+    }
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/projects/${currentProjectId}/documents`, { method: "DELETE" });
+      if (res.ok) {
+        setDocuments([]);
+        setSelectedDoc(null);
+        setDocChunks([]);
+        await loadProposals(currentProjectId);
+      } else {
+        alert("Failed to clear documents");
+      }
+    } catch (e: any) {
+      alert("Error clearing documents: " + e.message);
+    }
+  };
+
+  const handleTriggerExtraction = async (docId: string) => {
+    setExtractingDocId(docId);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/documents/${docId}/extract`, { method: "POST" });
+      if (res.ok) {
+        let attempts = 0;
+        const interval = setInterval(async () => {
+          attempts++;
+          await loadDocuments(currentProjectId);
+          await loadProposals(currentProjectId);
+          if (attempts >= 10) {
+            clearInterval(interval);
+            setExtractingDocId(null);
+          }
+        }, 2000);
+      } else {
+        setExtractingDocId(null);
+      }
+    } catch (e: any) {
+      alert("Extraction failed: " + e.message);
+      setExtractingDocId(null);
     }
   };
 
@@ -847,7 +775,8 @@ export default function NotionaryDashboard() {
       const pRes = await fetch("http://localhost:8000/api/v1/projects");
       const projects = await pRes.json();
       if (projects && projects.length > 0) {
-        const pId = projects[0].id;
+        const activeProj = projects.find((p: any) => p.name.includes("LeafGuard")) || projects[0];
+        const pId = activeProj.id;
         setCurrentProjectId(pId);
         const hRes = await fetch(`http://localhost:8000/api/v1/projects/${pId}/health`);
         setHealth(await hRes.json());
@@ -3132,7 +3061,7 @@ export default function NotionaryDashboard() {
                             type="text"
                             value={uploadTitle}
                             onChange={(e) => setUploadTitle(e.target.value)}
-                            placeholder="e.g. DOC-05 System Architecture"
+                            placeholder="e.g. System Architecture Spec or Meeting Note"
                             className="w-full bg-[#F7F7F3] border border-[#DDE1E7] rounded px-3 py-2 text-xs text-[#0C245C] focus:outline-none focus:border-[#0C245C]"
                           />
                         </div>
@@ -3153,6 +3082,19 @@ export default function NotionaryDashboard() {
                             <option value="dataset_card">Dataset Card</option>
                           </select>
                         </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-1 pb-1">
+                        <input
+                          type="checkbox"
+                          id="autoExtract"
+                          checked={autoExtract}
+                          onChange={(e) => setAutoExtract(e.target.checked)}
+                          className="h-3.5 w-3.5 accent-[#0C245C] rounded cursor-pointer"
+                        />
+                        <label htmlFor="autoExtract" className="text-xs text-[#0C245C] font-semibold cursor-pointer">
+                          Auto-extract decisions, tasks, claims &amp; experiments (AI)
+                        </label>
                       </div>
 
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
@@ -3240,50 +3182,103 @@ export default function NotionaryDashboard() {
                         <FileText className="h-4 w-4 text-[#0C245C]" />
                         <h3 className="text-sm font-bold text-[#0C245C] uppercase tracking-wider">Document Registry</h3>
                       </div>
-                      <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-[#0C245C] font-semibold">
-                        {documents.length} Indexed
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {documents.length > 0 && (
+                          <button
+                            onClick={handleClearAllDocuments}
+                            className="px-2 py-1 text-[11px] font-mono text-rose-600 hover:bg-rose-50 border border-rose-200 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                            title="Clear all documents from registry"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            Clear All
+                          </button>
+                        )}
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#F7F7F3] border border-[#DDE1E7] text-[#0C245C] font-semibold">
+                          {documents.length} Indexed
+                        </span>
+                      </div>
                     </div>
                     <div className="divide-y divide-[#DDE1E7] text-xs max-h-[460px] overflow-y-auto">
-                      {documents.map((doc) => {
-                        const isSelected = selectedDoc?.id === doc.id;
-                        return (
-                          <div
-                            key={doc.id}
-                            onClick={() => viewDocChunks(doc)}
-                            className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
-                              isSelected ? "bg-[#CCFF00]/15 border-l-4 border-l-[#0C245C]" : "hover:bg-slate-50"
-                            }`}
-                          >
-                            <div className="space-y-1 min-w-0 pr-3">
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-xs font-bold text-[#0C245C]">{doc.id.toUpperCase()}</span>
-                                <span className="font-semibold text-[#0C245C] truncate">{doc.title}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-mono text-[10px] text-[#64748B] uppercase">{doc.doc_type}</span>
-                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                <span className="font-mono text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">
-                                  {doc.pipeline_status || "indexed"}
-                                </span>
-                              </div>
-                            </div>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                viewDocChunks(doc);
-                              }}
-                              className={`px-3 py-1.5 rounded border text-xs font-mono font-semibold transition-colors shrink-0 cursor-pointer ${
-                                isSelected
-                                  ? "bg-[#0C245C] text-[#CCFF00] border-[#0C245C]"
-                                  : "border-[#DDE1E7] hover:border-[#0C245C] text-[#0C245C]"
+                      {documents.length === 0 ? (
+                        <div className="p-8 text-center space-y-3 bg-[#F7F7F3]">
+                          <FileText className="h-10 w-10 text-slate-300 mx-auto" />
+                          <p className="text-sm font-bold text-[#0C245C]">No documents ingested yet</p>
+                          <p className="text-xs text-[#64748B] max-w-sm mx-auto leading-relaxed">
+                            Upload your custom document (.pdf, .docx, .md, .txt, or .csv) above. Notionary will parse sections, compute vector embeddings, and automatically extract decisions, tasks, claims, and experiments.
+                          </p>
+                        </div>
+                      ) : (
+                        documents.map((doc) => {
+                          const isSelected = selectedDoc?.id === doc.id;
+                          const isExtracting = extractingDocId === doc.id;
+                          return (
+                            <div
+                              key={doc.id}
+                              onClick={() => viewDocChunks(doc)}
+                              className={`p-4 flex items-center justify-between cursor-pointer transition-colors ${
+                                isSelected ? "bg-[#CCFF00]/15 border-l-4 border-l-[#0C245C]" : "hover:bg-slate-50"
                               }`}
                             >
-                              {isSelected ? "Inspecting" : "Chunks"}
-                            </button>
-                          </div>
-                        );
-                      })}
+                              <div className="space-y-1 min-w-0 pr-3">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-xs font-bold text-[#0C245C]">{doc.id.slice(0, 8).toUpperCase()}</span>
+                                  <span className="font-semibold text-[#0C245C] truncate">{doc.title}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-mono text-[10px] text-[#64748B] uppercase">{doc.doc_type}</span>
+                                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                  <span className={`font-mono text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                                    doc.pipeline_status === "completed" || doc.pipeline_status === "extracted"
+                                      ? "text-emerald-700 bg-emerald-50"
+                                      : doc.pipeline_status === "failed"
+                                      ? "text-rose-700 bg-rose-50"
+                                      : "text-amber-700 bg-amber-50 animate-pulse"
+                                  }`}>
+                                    {doc.pipeline_status || "indexed"}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleTriggerExtraction(doc.id);
+                                  }}
+                                  disabled={isExtracting}
+                                  title="Trigger AI Extraction of Decisions, Tasks & Claims"
+                                  className="px-2 py-1.5 rounded border border-[#DDE1E7] hover:border-[#0C245C] bg-white text-[#0C245C] text-xs font-mono font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                                >
+                                  <Sparkles className={`h-3 w-3 text-amber-500 ${isExtracting ? "animate-spin" : ""}`} />
+                                  <span className="hidden sm:inline">{isExtracting ? "Extracting..." : "Extract"}</span>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    viewDocChunks(doc);
+                                  }}
+                                  className={`px-2.5 py-1.5 rounded border text-xs font-mono font-semibold transition-colors cursor-pointer ${
+                                    isSelected
+                                      ? "bg-[#0C245C] text-[#CCFF00] border-[#0C245C]"
+                                      : "border-[#DDE1E7] hover:border-[#0C245C] text-[#0C245C] bg-white"
+                                  }`}
+                                >
+                                  {isSelected ? "Inspecting" : "Chunks"}
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteDocument(doc.id);
+                                  }}
+                                  title="Delete Document"
+                                  className="p-1.5 rounded border border-rose-200 hover:bg-rose-50 text-rose-600 transition-colors cursor-pointer"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
                   </div>
 
